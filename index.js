@@ -1,9 +1,13 @@
+const JSBI= require('jsbi')
+const config = require('./config')
 const accountService= require("./account_service")
 const productService= require("./productService")
+const orderService= require("./orderService")
 const hprose = require("hprose")
-const config = require('./config')
-const JSBI= require('jsbi')
-//启动服务：node --harmony index.js
+
+//启动服务：node --harmony index.js arg1 arg2
+
+
 startRpcServer()
 
 
@@ -20,7 +24,8 @@ function startRpcServer(){
     const server = hprose.Server.create(config.serverUri);
     server.addFunction(accountService.queryTokenBalance,);
     server.addFunction(productService.bookProduct)
-
+    server.addFunction(productService.getGasPriceGweiAndEthPrice)
+    server.addFunction(orderService.addOrder)
     server.start();
 }
 

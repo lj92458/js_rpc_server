@@ -1,1 +1,1 @@
-node --harmony index.js >/dev/null &
+node --harmony index.js

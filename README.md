@@ -9,7 +9,8 @@
 
 #### 安装教程
 
-1.  xxxx
+1.  上线时，要修改config.js,把process.argv.splice(3)改成
+process.argv.splice(2)，把chainId改成主网
 2.  xxxx
 3.  xxxx
 

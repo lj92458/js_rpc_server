@@ -1,6 +1,10 @@
+const ethers = require('ethers')
+const uniswapSDK = require('@uniswap/sdk')
+const JSBI = require('jsbi')
+
 function bigNumToFloat(bigNum, decimals) {
     if (bigNum._hex) {
-        let str = movePointLeft(BigInt(bigNum._hex).toString(),decimals)
+        let str = movePointLeft(BigInt(bigNum._hex).toString(), decimals)
         return str
     } else {
         throw Error("_hex属性不存在：" + bigNum)
@@ -11,17 +15,17 @@ function bigNumToFloat(bigNum, decimals) {
 function movePointLeft(str, num) {
     let result
     if (num >= str.length) {
-        result= ("0.") + "0".repeat(num - str.length) + str
+        result = ("0.") + "0".repeat(num - str.length) + str
     } else {
-        result= str.substr(0, str.length - num) + "." + str.substr(str.length - num)
+        result = str.substr(0, str.length - num) + "." + str.substr(str.length - num)
     }
-    return result.replace(/0+$/,"0")
+    return result.replace(/0+$/, "0")
 
 }
 
 //把小数变成整数：往右移动小数点
 function movePointRight(str, num) {
-    str+=""
+    str += ""
     let index = str.indexOf(".")
     if (index === -1) {
         str += "."
@@ -37,18 +41,42 @@ function movePointRight(str, num) {
 }
 
 //返回移动后的值，以及移动的位数[str,num]
-function movePointRight2(value){
-    let str=value+""
-    let index=str.indexOf(".")
-    if(index===-1){
-        return [str,0]
-    }else{
-        let num=str.length-index-1
-        return [movePointRight(str,num),num]
+function movePointRight2(value) {
+    let str = value + ""
+    let index = str.indexOf(".")
+    if (index === -1) {
+        return [str, 0]
+    } else {
+        let num = str.length - index - 1
+        return [movePointRight(str, num), num]
     }
 }
 
-//console.log(movePointRight2("12.3"))
-exports.bigNumToFloat=bigNumToFloat
-exports.movePointRight2=movePointRight2
-exports.movePointRight=movePointRight
+//没用上
+function adjustGasPrice(gasPrice) {
+    let percent
+    if (gasPrice < 10_000_000_000) {
+        percent = 100 / 100
+    } else if (gasPrice < 95_000_000_000) {
+        percent = 88 / 100
+    } else {
+        percent = 83 / 100
+    }
+    return parseInt("" + (gasPrice * percent))
+}
+
+function doubleToPersent(value) {
+    const [str, num] = movePointRight2(value)
+    return new uniswapSDK.Percent(str, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(num)))
+
+}
+
+//console.log(JSON.stringify(doubleToPersent("12.333")))
+//console.log(adjustGasPrice(ethers.BigNumber.from("95000000000")))
+
+exports.bigNumToFloat = bigNumToFloat
+exports.movePointRight2 = movePointRight2
+exports.movePointRight = movePointRight
+exports.adjustGasPrice = adjustGasPrice
+exports.doubleToPersent = doubleToPersent
+

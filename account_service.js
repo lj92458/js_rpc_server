@@ -1,7 +1,5 @@
-const uniswapSDK = require('@uniswap/sdk')
-const IUniswapV2Pair = require('@uniswap/v2-core/build/IUniswapV2Pair.json')
 const IUniswapV2ERC20 = require('@uniswap/v2-core/build/IUniswapV2ERC20.json')
-const Contracts = require('@ethersproject/contracts')
+const ethers = require('ethers')
 const config = require('./config')
 const util = require("./util")
 
@@ -11,11 +9,12 @@ const util = require("./util")
  * @param symbolArr 货币符号数组
  * @return 复杂对象组成的数组
  */
- function queryTokenBalance(ethAddress, symbolArr) {
+function queryTokenBalance(ethAddress, symbolArr) {
+    ethAddress = ethers.utils.getAddress(ethAddress)//把格式变成包含大小写字母的，免得提示unchecksum address
     let promiseArr = []
     let tokenObjArr = []
     for (let symbol of symbolArr) {
-        symbol=symbol.toLowerCase()
+        symbol = symbol.toLowerCase()
         let tokenObj = config.tokens[symbol]
         if (!tokenObj) {
             throw Error("token 不存在：" + symbol)
@@ -24,7 +23,7 @@ const util = require("./util")
         if (symbol === "eth") {
             promiseArr.push(config.provider.getBalance(ethAddress))
         } else {
-            let contractERC20 = new Contracts.Contract(tokenObj.address, IUniswapV2ERC20.abi, config.provider)
+            let contractERC20 = new ethers.Contract(tokenObj.address, IUniswapV2ERC20.abi, config.provider)
             promiseArr.push(contractERC20.balanceOf(ethAddress))
         }
     }//end for
@@ -42,7 +41,6 @@ const util = require("./util")
         return accountArr
     })
 }
-
 
 
 exports.queryTokenBalance = queryTokenBalance

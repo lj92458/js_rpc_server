@@ -1,14 +1,6 @@
-const TokenAmount = require("@uniswap/sdk").TokenAmount
-
 const uniswapSDK = require('@uniswap/sdk')
-const Token = require('@uniswap/sdk').Token
-const Pair = require('@uniswap/sdk').Pair
-const Trade = require('@uniswap/sdk').Trade
-const Fraction = require('@uniswap/sdk').Fraction
-const Price = require('@uniswap/sdk').Price
 const IUniswapV2Pair = require('@uniswap/v2-core/build/IUniswapV2Pair.json')
-const IUniswapV2ERC20 = require('@uniswap/v2-core/build/IUniswapV2ERC20.json')
-const Contracts = require('@ethersproject/contracts')
+const ethers = require('ethers')
 const config = require('./config')
 const util = require("./util")
 const JSBI = require('jsbi')
@@ -28,21 +20,13 @@ async function bookProduct(coinPair, marketOrderSize, orderStepLength) {
     if (!goodsObj || !moneyObj) {
         throw Error("token 不存在：" + [goods, money])
     }
-    if (goods === "eth") {
-        goodsToken = uniswapSDK.WETH[config.chainId]
-    } else {
-        goodsToken = new Token(config.chainId, goodsObj.address, goodsObj.decimals, goodsObj.symbol)
-    }
 
-    if (money === "eth") {
-        moneyToken = uniswapSDK.WETH[config.chainId]
-    } else {
-        moneyToken = new Token(config.chainId, moneyObj.address, moneyObj.decimals, moneyObj.symbol)
-    }
+    goodsToken = new uniswapSDK.Token(config.chainId, goodsObj.address, goodsObj.decimals, goodsObj.symbol)
+    moneyToken = new uniswapSDK.Token(config.chainId, moneyObj.address, moneyObj.decimals, moneyObj.symbol)
 
     const pair = await uniswapSDK.Fetcher.fetchPairData(goodsToken, moneyToken, config.provider)
     const [str, num] = util.movePointRight2(orderStepLength)
-    const orderStep_F = new Fraction(str, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(num)))
+    const orderStep_F = new uniswapSDK.Fraction(str, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(num)))
     //用卖的办法，模拟出市场买单。然后我可以卖给它。
     let bids = createMarketOrder(pair, goodsToken, moneyToken, marketOrderSize, orderStep_F, goodsToken)
     //console.log(bids)
@@ -71,14 +55,14 @@ function createMarketOrder(pair, inputToken, outputToken, marketOrderSize, order
     const r = orderStep_F.divide(pair.priceOf(inputToken).adjusted)
     //console.log(r.toSignificant(30))
     const a = pair.reserveOf(inputToken).multiply(
-        (new Fraction("1")).divide(
+        (new uniswapSDK.Fraction("1")).divide(
             //因为a必须>0 ,所以r必须大于0.003 。所以给r加上0.003
-            (new Fraction("1")).subtract(r.add(new Fraction("3", "1000")))
-        ).subtract(new Fraction("1000", "997"))
+            (new uniswapSDK.Fraction("1")).subtract(r.add(new uniswapSDK.Fraction("3", "1000")))
+        ).subtract(new uniswapSDK.Fraction("1000", "997"))
     ).divide("2")
 
     //console.log(a.toFixed(6))
-    const inputAmount = new TokenAmount(inputToken, util.movePointRight(a.toFixed(6), inputToken.decimals))
+    const inputAmount = new uniswapSDK.TokenAmount(inputToken, util.movePointRight(a.toFixed(6), inputToken.decimals))
     let outputAmountArr = []
     for (let i = 0, tmpPair = pair; i < marketOrderSize; i++) {
         [outputAmountArr[i], tmpPair] = tmpPair.getOutputAmount(inputAmount)
@@ -89,13 +73,46 @@ function createMarketOrder(pair, inputToken, outputToken, marketOrderSize, order
     let moneyToken = isSell ? outputToken : inputToken
     for (let outputAmount of outputAmountArr) {
         let [goodsAmount, moneyAmount] = isSell ? [inputAmount, outputAmount] : [outputAmount, inputAmount]
-        let price = new Price(goodsToken, moneyToken, goodsAmount.raw, moneyAmount.raw).adjusted.toFixed(6)
+        let price = new uniswapSDK.Price(goodsToken, moneyToken, goodsAmount.raw, moneyAmount.raw).toFixed(6)
         let amount = goodsAmount.toFixed(6)
         orderArr.push([price, amount])
     }
     return orderArr
 }
 
+/**
+ * 查询gas费，以及eth相对某种币的价格
+ * @param moneySymbol 交易对中的计价货币
+ * @return {Promise<Array>}
+ */
+async function getGasPriceGweiAndEthPrice(moneySymbol) {
+    let gasPrice
+    if (moneySymbol === 'eth') {
+        gasPrice = await config.provider.getGasPrice()
+        let gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei")
+        return [Number(gasPriceGwei).toFixed(2), 1]
+
+    } else {
+        const [goods, money] = ['weth', moneySymbol]
+        let goodsToken, moneyToken
+        const [goodsObj, moneyObj] = [config.tokens[goods], config.tokens[money]]
+        if (!goodsObj || !moneyObj) {
+            throw Error("token 不存在：" + [goods, money])
+        }
+
+        goodsToken = new uniswapSDK.Token(config.chainId, goodsObj.address, goodsObj.decimals, goodsObj.symbol)
+        moneyToken = new uniswapSDK.Token(config.chainId, moneyObj.address, moneyObj.decimals, moneyObj.symbol)
+        const [pair, gasPrice] = await Promise.all([
+            uniswapSDK.Fetcher.fetchPairData(goodsToken, moneyToken, config.provider),
+            config.provider.getGasPrice()
+        ])
+        const [goodsAmount, moneyAmount] = pair.token1.equals(goodsToken) ? [pair.reserve1, pair.reserve0] : [pair.reserve0, pair.reserve1]
+        let price = new uniswapSDK.Price(goodsToken, moneyToken, goodsAmount.raw, moneyAmount.raw).toFixed(6)
+        let gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei")
+        return [Number(gasPriceGwei).toFixed(2), price]
+
+    }
+}
 
 //test
 /*
@@ -103,5 +120,7 @@ bookProduct("eth-usdc", 100, 0.03203).catch(e => {
     console.log(e + "" + e.message)
 })
  */
+//getGasPriceGweiAndEthPrice("dai").then(arr=>{console.info(arr[0],arr[1])})
 
-exports.bookProduct=bookProduct
+exports.bookProduct = bookProduct
+exports.getGasPriceGweiAndEthPrice = getGasPriceGweiAndEthPrice
