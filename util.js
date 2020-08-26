@@ -1,10 +1,10 @@
 const ethers = require('ethers')
 const uniswapSDK = require('@uniswap/sdk')
-const JSBI = require('jsbi')
+
 
 function bigNumToFloat(bigNum, decimals) {
     if (bigNum._hex) {
-        let str = movePointLeft(BigInt(bigNum._hex).toString(), decimals)
+        let str = movePointLeft(bigNum.toString(), decimals)
         return str
     } else {
         throw Error("_hex属性不存在：" + bigNum)
@@ -67,7 +67,7 @@ function adjustGasPrice(gasPrice) {
 
 function doubleToPersent(value) {
     const [str, num] = movePointRight2(value)
-    return new uniswapSDK.Percent(str, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(num)))
+    return new uniswapSDK.Percent(str, movePointRight("1", num))
 
 }
 

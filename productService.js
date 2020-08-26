@@ -3,7 +3,7 @@ const IUniswapV2Pair = require('@uniswap/v2-core/build/IUniswapV2Pair.json')
 const ethers = require('ethers')
 const config = require('./config')
 const util = require("./util")
-const JSBI = require('jsbi')
+
 
 /**
  * 查询某个交易对的市场挂单。
@@ -26,7 +26,7 @@ async function bookProduct(coinPair, marketOrderSize, orderStepLength) {
 
     const pair = await uniswapSDK.Fetcher.fetchPairData(goodsToken, moneyToken, config.provider)
     const [str, num] = util.movePointRight2(orderStepLength)
-    const orderStep_F = new uniswapSDK.Fraction(str, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(num)))
+    const orderStep_F = new uniswapSDK.Fraction(str, util.movePointRight("1",num))
     //用卖的办法，模拟出市场买单。然后我可以卖给它。
     let bids = createMarketOrder(pair, goodsToken, moneyToken, marketOrderSize, orderStep_F, goodsToken)
     //console.log(bids)

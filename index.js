@@ -1,9 +1,10 @@
-const JSBI= require('jsbi')
+
 const config = require('./config')
 const accountService= require("./account_service")
 const productService= require("./productService")
 const orderService= require("./orderService")
 const hprose = require("hprose")
+const LpProfit= require("./LpProfit")
 
 //启动服务：node --harmony index.js arg1 arg2
 
@@ -26,7 +27,10 @@ function startRpcServer(){
     server.addFunction(productService.bookProduct)
     server.addFunction(productService.getGasPriceGweiAndEthPrice)
     server.addFunction(orderService.addOrder)
+    server.addFunction(LpProfit.queryPairState)
+    server.addFunction(config.getProp)
+    server.addFunction(config.getConfig)
     server.start();
 }
 
-//console.log(JSBI.BigInt('0x11').toString())
+

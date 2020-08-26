@@ -1,7 +1,7 @@
 const uniswapSDK = require('@uniswap/sdk')
 const ethers = require('ethers')
 const IUniswapV2Router02 = require('@uniswap/v2-periphery/build/IUniswapV2Router02.json')
-const JSBI = require('jsbi')
+
 const config = require('./config')
 const util = require("./util")
 const https = require('https');
@@ -41,7 +41,7 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
 const paramSet = {}//去重，防止addOrder方法被莫名奇妙的重复调用
 const defaultSlipage = util.doubleToPersent(config.slippage)
 
-config.init()
+config.initWallet()
 
 function logHead(transId) {
     return new Date().toLocaleString() + transId + ": "
