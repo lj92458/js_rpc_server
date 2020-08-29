@@ -85,7 +85,7 @@
       "myReserveUSD": []
     },
     {
-      "name": "eth-renBtc",
+      "name": "eth-renbtc",
       "address": "0x81fbef4704776cc5bba0a5df3a90056d2c6900b3",
       "follow": false,
       "myReserveUSD": []

@@ -47,15 +47,18 @@ const dbPath='/var/js_rpc_server/sqlite3.db'
 
 //根据启动参数，对程序进行初始化
 function initWallet() {
-    const args = process.argv.splice(3);
+    let index=3
+    if(process.argv.length>index) {
+        const args = process.argv.splice(index);
 
-    if (!wallet) {
-        wallet = ethers.Wallet.fromEncryptedJsonSync(jsonWallet, args[0]).connect(provider)
-        console.log('wallet load succeed.Address:' + wallet.address)
-        wallet.getGasPrice().then(r => console.log('gas price:' + ethers.utils.formatUnits(r, "gwei")))
-        wallet.getBalance().then(num => console.log("wallet balance:" + ethers.utils.formatEther(num)))
+        if (!wallet) {
+            wallet = ethers.Wallet.fromEncryptedJsonSync(jsonWallet, args[0]).connect(provider)
+            console.log('wallet load succeed.Address:' + wallet.address)
+            wallet.getGasPrice().then(r => console.log('gas price:' + ethers.utils.formatUnits(r, "gwei")))
+            wallet.getBalance().then(num => console.log("wallet balance:" + ethers.utils.formatEther(num)))
 
-        exports.wallet = wallet
+            exports.wallet = wallet
+        }
     }
 }
 

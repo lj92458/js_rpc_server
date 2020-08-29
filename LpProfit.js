@@ -5,7 +5,7 @@ const pairArr = require('./properties.json').pairObjArr
 const ethers = require('ethers')
 const IUniswapV2Pair = require('@uniswap/v2-core/build/IUniswapV2Pair.json')
 const config = require('./config')
-
+const dateUtil = require('./dateUtil')
 /**
  * 定时存储uniswap各交易对的资金池状态(totalsupply,reserve0,reserve1).并提供查询功能。用来生成收益走势图。
  */
@@ -21,7 +21,8 @@ const job = schedule.scheduleJob('0 0 * * * *', storePairState);
  */
 async function storePairState() {
     console.log(new Date().toLocaleString() + "开始执行定时任务")
-     async function readContract(contract,pair){
+
+    async function readContract(contract, pair) {
         //console.log("查询交易对" + pair.name + ":" + pair.address)
         const [reserves0, reserves1] = await contract.getReserves()
         const totalsupply = await contract.totalSupply()
@@ -29,6 +30,7 @@ async function storePairState() {
         rowArr.push([
             pair.address,
             pair.name,
+            dateUtil.formatDate(new Date(), 'yyyy-MM-dd hh:00:00', 'utc'),
             totalsupply.toString(),
             reserves0.toString(),
             reserves1.toString()
@@ -39,12 +41,12 @@ async function storePairState() {
     for (let pair of pairArr) {
         const contract = new ethers.Contract(pair.address, IUniswapV2Pair.abi, config.provider)
         try {
-            await readContract(contract,pair)
+            await readContract(contract, pair)
         } catch (e) {
-            if (e.message.indexOf('failed to meet quorum')>=0) {
-                    await readContract(contract).catch(e=>{
-                        console.info("再次失败！")
-                    })
+            if (e.message.indexOf('failed to meet quorum') >= 0) {
+                await readContract(contract).catch(e => {
+                    console.info("再次失败！")
+                })
             } else {
                 console.info("查询pair异常:" + e.message)
             }
@@ -65,7 +67,7 @@ create table if not exists pair_state (
     PRIMARY KEY (pair_address,date_time)
 ) `);
 
-    let stmt = await db.prepare("INSERT INTO pair_state(pair_address,pair_name,totalsupply,reserve0,reserve1) VALUES (?,?,?,?,?)");
+    let stmt = await db.prepare("INSERT INTO pair_state(pair_address,pair_name,date_time,totalsupply,reserve0,reserve1) VALUES (?,?,?,?,?,?)");
     for (let row of rowArr) {
 
         await stmt.bind(row)
@@ -83,13 +85,20 @@ create table if not exists pair_state (
 
 //查询某交易对的历史状态
 async function queryPairState(pairAddress, beginDateTime) {
+    console.log('queryPairState:'+pairAddress+','+beginDateTime)
     const db = await open({filename: config.dbPath, driver: sqlite3.Database})
+    let rows
+    if (pairAddress&& pairAddress!=='') {
+        rows = await db.all(`SELECT pair_address,date_time,totalsupply,reserve0,reserve1 FROM pair_state 
+                        where pair_address=? and date_time>=? order by date_time limit 20000`,
+            pairAddress,
+            beginDateTime)
+    } else {
+        rows = await db.all(`SELECT pair_address, date_time,totalsupply,reserve0,reserve1 FROM pair_state 
+                        where date_time>=? order by pair_address,date_time limit 20000`,
 
-    let rows = await db.all(`SELECT date_time,totalsupply,reserve0,reserve1 FROM pair_state 
-                        where pair_address=? and date_time>=? order by date_time limit 1000`,
-        pairAddress,
-        beginDateTime)
-
+            beginDateTime)
+    }
     await db.close()
     //console.log(rows)
     return rows

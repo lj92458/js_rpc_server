@@ -55,9 +55,9 @@ function movePointRight2(value) {
 //没用上
 function adjustGasPrice(gasPrice) {
     let percent
-    if (gasPrice < 10_000_000_000) {
+    if (gasPrice < 10000000000) {
         percent = 100 / 100
-    } else if (gasPrice < 95_000_000_000) {
+    } else if (gasPrice < 95000000000) {
         percent = 88 / 100
     } else {
         percent = 83 / 100
