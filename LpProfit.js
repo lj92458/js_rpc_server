@@ -1,7 +1,6 @@
 const sqlite3 = require('sqlite3').verbose()
 const open = require('sqlite').open
 const schedule = require('node-schedule')
-const pairArr = require('./properties.json').pairObjArr
 const ethers = require('ethers')
 const IUniswapV2Pair = require('@uniswap/v2-core/build/IUniswapV2Pair.json')
 const config = require('./config')
@@ -22,14 +21,14 @@ const job = schedule.scheduleJob('0 0 * * * *', storePairState);
 async function storePairState() {
     console.log(new Date().toLocaleString() + "开始执行定时任务")
 
-    async function readContract(contract, pair) {
+    async function readContract(contract, pair, plat) {
         //console.log("查询交易对" + pair.name + ":" + pair.address)
         const [reserves0, reserves1] = await contract.getReserves()
         const totalsupply = await contract.totalSupply()
 
         rowArr.push([
             pair.address,
-            pair.name,
+            pair.name + '_' + plat,
             dateUtil.formatDate(new Date(), 'yyyy-MM-dd hh:00:00', 'utc'),
             totalsupply.toString(),
             reserves0.toString(),
@@ -38,25 +37,28 @@ async function storePairState() {
     }
 
     let rowArr = []
-    for (let pair of pairArr) {
-        const contract = new ethers.Contract(pair.address, IUniswapV2Pair.abi, config.provider)
-        try {
-            await readContract(contract, pair)
-        } catch (e) {
-            if (e.message.indexOf('failed to meet quorum') >= 0) {
-                await readContract(contract).catch(e => {
-                    console.info("再次失败！")
-                })
-            } else {
-                console.info("查询pair异常:" + e.message)
+    for (let plat of ['uniswap', 'sushiswap']) {
+        const pairArr = require('./properties.json')[plat].pairObjArr
+        for (let pair of pairArr) {
+            const contract = new ethers.Contract(pair.address, IUniswapV2Pair.abi, config.provider)
+            try {
+                await readContract(contract, pair, plat)
+            } catch (e) {
+                if (e.message.indexOf('failed to meet quorum') >= 0) {
+                    await readContract(contract, pair, plat).catch(e => {
+                        console.info("再次失败！")
+                    })
+                } else {
+                    console.info("查询pair异常:" + e.message)
+                }
             }
         }
-    }
-    console.log(new Date().toLocaleString() + "查询完毕，开始插入")
 
-    //将数据批量存入数据库 文档：  https://github.com/kriasoft/node-sqlite star:578 ,fork 73  支持es6的promise
-    const db = await open({filename: config.dbPath, driver: sqlite3.Database})//如果要cache那就sqlite3.cached.Database
-    await db.exec(`
+        console.log(new Date().toLocaleString() + "查询完毕，开始插入")
+
+        //将数据批量存入数据库 文档：  https://github.com/kriasoft/node-sqlite star:578 ,fork 73  支持es6的promise
+        const db = await open({filename: config.dbPath, driver: sqlite3.Database})//如果要cache那就sqlite3.cached.Database
+        await db.exec(`
 create table if not exists pair_state (
     pair_address char(42),
     pair_name varchar (20),
@@ -67,16 +69,18 @@ create table if not exists pair_state (
     PRIMARY KEY (pair_address,date_time)
 ) `);
 
-    let stmt = await db.prepare("INSERT INTO pair_state(pair_address,pair_name,date_time,totalsupply,reserve0,reserve1) VALUES (?,?,?,?,?,?)");
-    for (let row of rowArr) {
+        let stmt = await db.prepare("INSERT INTO pair_state(pair_address,pair_name,date_time,totalsupply,reserve0,reserve1) VALUES (?,?,?,?,?,?)");
+        for (let row of rowArr) {
 
-        await stmt.bind(row)
-        await stmt.run()
-    }
-    await stmt.finalize()
+            await stmt.bind(row)
+            await stmt.run()
+        }
+        await stmt.finalize()
 
 
-    await db.close()
+        await db.close()
+    }//end for
+
     console.log(new Date().toLocaleString() + "定时任务完成")
 }
 
@@ -85,10 +89,10 @@ create table if not exists pair_state (
 
 //查询某交易对的历史状态
 async function queryPairState(pairAddress, beginDateTime) {
-    console.log('queryPairState:'+pairAddress+','+beginDateTime)
+    console.log('queryPairState:' + pairAddress + ',' + beginDateTime)
     const db = await open({filename: config.dbPath, driver: sqlite3.Database})
     let rows
-    if (pairAddress&& pairAddress!=='') {
+    if (pairAddress && pairAddress !== '') {
         rows = await db.all(`SELECT pair_address,date_time,totalsupply,reserve0,reserve1 FROM pair_state 
                         where pair_address=? and date_time>=? order by date_time limit 20000`,
             pairAddress,

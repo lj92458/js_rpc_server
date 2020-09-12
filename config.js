@@ -32,7 +32,16 @@ const tokensMAINNET = {
     comp: {symbol: "comp", address: "0xc00e94Cb662C3520282E6f5717214004A7f26888", decimals: 18},
     knc: {symbol: "knc", address: "0xdd974D5C2e2928deA5F71b9825b8b646686BD200", decimals: 18},
     renbtc: {symbol: "renbtc", address: "0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D", decimals: 8},
-
+    uma: {symbol: "uma", address: "0x04Fa0d235C4abf4BcF4787aF4CF447DE572eF828", decimals: 18},
+    ren: {symbol: "ren", address: "0x408e41876cCCDC0F92210600ef50372656052a38", decimals: 18},
+    sushi: {symbol: "sushi", address: "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2", decimals: 18},
+    yfi: {symbol: "yfi", address: "0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e", decimals: 18},
+    band: {symbol: "band", address: "0xBA11D00c5f74255f56a5E366F4F77f5A186d7f55", decimals: 18},
+    yamv2: {symbol: "yamv2", address: "0xAba8cAc6866B83Ae4eec97DD07ED254282f6aD8A", decimals: 24},
+    yfii: {symbol: "yfii", address: "0xa1d0E215a23d7030842FC67cE582a6aFa3CCaB83", decimals: 18},
+    susd: {symbol: "susd", address: "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51", decimals: 18},
+    srm: {symbol: "srm", address: "0x476c5E26a75bd202a9683ffD34359C0CC15be0fF", decimals: 18},
+    crv: {symbol: "crv", address: "0xD533a949740bb3306d119CC777fa900bA034cd52", decimals: 18},
 
 }
 const tokensROPSTEN = {
