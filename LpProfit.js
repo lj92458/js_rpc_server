@@ -88,23 +88,28 @@ create table if not exists pair_state (
 
 
 //查询某交易对的历史状态
-async function queryPairState(pairAddress, beginDateTime) {
+async function queryPairState(pairAddress, beginDateTime, plat) {
     console.log('queryPairState:' + pairAddress + ',' + beginDateTime)
     const db = await open({filename: config.dbPath, driver: sqlite3.Database})
     let rows
     if (pairAddress && pairAddress !== '') {
         rows = await db.all(`SELECT pair_address,date_time,totalsupply,reserve0,reserve1 FROM pair_state 
-                        where pair_address=? and date_time>=? order by date_time limit 20000`,
+                        where pair_address=? and date_time>=? and ( 
+                        pair_name like '%${plat}' or pair_name not like '%|_%' escape '|') 
+                        order by date_time limit 20000`,
             pairAddress,
             beginDateTime)
     } else {
         rows = await db.all(`SELECT pair_address, date_time,totalsupply,reserve0,reserve1 FROM pair_state 
-                        where date_time>=? order by pair_address,date_time limit 20000`,
+                        where date_time>=? and ( 
+                        pair_name like '%${plat}' or pair_name not like '%|_%' escape '|') 
+                        order by pair_address,date_time limit 20000`,
 
             beginDateTime)
     }
     await db.close()
     //console.log(rows)
+
     return rows
 }
 

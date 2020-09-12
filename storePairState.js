@@ -66,7 +66,6 @@ const client = new ApolloClient({
 })
 
 
-
 async function query(query, pairAddress, beginTime, endTime) {
     let result = await client.query({
         query: query,
@@ -135,7 +134,7 @@ liquidityPositionSnapshots(where:{
 
                 if (objArr && objArr.length > 0) {
 
-                    await storeEveryHour(objArr, thisDay, nextDay, db, pair, tokenArr)
+                    await storeEveryHour(plat, objArr, thisDay, nextDay, db, pair, tokenArr)
 
                 } else {
                     console.log(dateUtil.formatDate(thisDay, format, 'utc') + "objArr.length:为空")
@@ -154,7 +153,7 @@ liquidityPositionSnapshots(where:{
 }
 
 //辅助方法，对一天的数据，进行整理：每小时只挑选一条数据
-async function storeEveryHour(objArr, thisDay, nextDay, db, pair, tokenArr) {
+async function storeEveryHour(plat, objArr, thisDay, nextDay, db, pair, tokenArr) {
     console.log("开始处理日期：" + dateUtil.formatDate(thisDay, format, 'utc'))
     let thisHour, nextHour
     let stmt = await db.prepare("INSERT INTO pair_state(pair_address,pair_name,date_time,totalsupply,reserve0,reserve1) VALUES (?,?,?,?,?,?)");
@@ -171,7 +170,7 @@ async function storeEveryHour(objArr, thisDay, nextDay, db, pair, tokenArr) {
 
                 let row = [
                     pair.address,
-                    pair.name,
+                    pair.name + '_' + plat,
                     dateUtil.formatDate(thisHour, format, 'utc'),
                     util.movePointRight(obj.liquidityTokenTotalSupply, 18),
                     util.movePointRight(obj.reserve0, tokenArr[0].decimals),
