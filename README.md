@@ -1,7 +1,7 @@
 # js_rpc_server
 
 #### 介绍
-把js语言实现的项目，做成远程调用服务。目前只有uniswap-sdk和ethersproject
+把别人用js语言实现的功能，包装成远程调用服务。目前只有uniswap-sdk和ethersproject
 
 #### 软件架构
 软件架构说明
