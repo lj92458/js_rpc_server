@@ -20,7 +20,7 @@
     "big.js": "^6.2.1",
     "cross-fetch": "^3.0.5",
     "decimal.js": "^10.4.3",
-    "ethers": "6.0.8",
+    "ethers": "5.7.2",
     "graphql": "16.6.0",
     "graphql-tag": "^2.11.0",
     "hardhat": "^2.13.0",

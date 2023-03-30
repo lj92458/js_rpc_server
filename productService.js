@@ -131,7 +131,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     let gasPrice
     if (moneySymbol === 'eth') {
         gasPrice = await config.provider.getGasPrice()
-        let gasPriceGwei = ethers.formatUnits(gasPrice, "gwei")
+        let gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei")
         return [Number(gasPriceGwei).toFixed(2), 1]
 
     } else {
@@ -141,7 +141,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
         const [pool, gasPrice] = await Promise.all([getPool(config.provider, goodsToken, moneyToken, poolFee), config.provider.getGasPrice()])
 
         let price = pool.priceOf(goodsToken).toFixed(9)
-        let gasPriceGwei = ethers.formatUnits(gasPrice, "gwei")
+        let gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei")
         return [Number(gasPriceGwei).toFixed(2), price]
 
     }

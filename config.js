@@ -28,7 +28,7 @@ export const infuraAPIKey = "34922f85dc48411c9f1312b6031a71d6";
     let provider
     //如果是本机客户端
     if (env === Environment.LOCAL) {
-        provider = new ethers.JsonRpcProvider(rpc.local)
+        provider = new ethers.providers.JsonRpcProvider(rpc.local)
     } else if (env === Environment.MAINNET) {//如果是远程公共服务
         //ethers.js包装过的provider，里面有多个provider，能对比各个provider返回的结果，防止被某个欺骗。
         provider = ethers.getDefaultProvider(chainId, {
@@ -37,7 +37,7 @@ export const infuraAPIKey = "34922f85dc48411c9f1312b6031a71d6";
         })
     } else {// 浏览器扩展
         try {
-            provider = new ethers.BrowserProvider(window?.ethereum, 'any')
+            provider = new ethers.providers.Web3Provider(window?.ethereum, 'any')
         } catch (e) {
             console.log('No Wallet Extension Found')
             return null
@@ -64,8 +64,8 @@ export function initWallet(provider) {
         if (!wallet) {
             wallet = ethers.Wallet.fromEncryptedJsonSync(jsonWallet, args[0]).connect(provider)
             console.log('wallet load succeed.Address:' + wallet.address)
-            wallet.getGasPrice().then(r => console.log('gas price:' + ethers.formatUnits(r, "gwei")))
-            wallet.getBalance().then(num => console.log("wallet balance:" + ethers.formatEther(num)))
+            wallet.getGasPrice().then(r => console.log('gas price:' + ethers.utils.formatUnits(r, "gwei")))
+            wallet.getBalance().then(num => console.log("wallet balance:" + ethers.utils.formatEther(num)))
 
             //exports.wallet = wallet
             return wallet

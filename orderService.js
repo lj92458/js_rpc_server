@@ -49,7 +49,7 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
  * @param volume {Number}
  * @param maxWaitSeconds
  * @param gasPriceGwei
- * @param slippage {double|string} 滑点. 0.001表示0.1%
+ * @param slippage {Number|string} 滑点. 0.001表示0.1%
  * @param poolFee {number} 枚举类型FeeAmount的值：500表示百万分之500，也就是0.0005，也就是0.05%; 3000表示0.3%,10000表示1%
  * @returns {Promise<{orderId, nonce, hash}>}
  */

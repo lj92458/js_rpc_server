@@ -1,7 +1,6 @@
 import assert from 'assert'
 import _Big from 'big.js'
 import toFormat from 'toformat'
-import JSBI from 'jsbi'
 
 const ethers = require('ethers')
 const sdkCore = require('@uniswap/sdk-core')

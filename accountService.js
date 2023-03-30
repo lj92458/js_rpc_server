@@ -10,7 +10,7 @@ import assert from 'assert'
  * @return 复杂对象组成的数组
  */
 function queryTokenBalance(ethAddress, symbolArr) {
-    ethAddress = ethers.getAddress(ethAddress)//把格式变成包含大小写字母的，免得提示unchecksum address
+    ethAddress = ethers.utils.getAddress(ethAddress)//把格式变成包含大小写字母的，免得提示unchecksum address
     let promiseArr = []
     let tokenObjArr = []
     for (let symbol of symbolArr) {
