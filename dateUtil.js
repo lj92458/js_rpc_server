@@ -1,8 +1,8 @@
 //Date.prototype.formatLocale = function(fmt){return formatDate.call(this,fmt,'locale')}
 //Date.prototype.formatUTC = function(fmt){return formatDate.call(this,fmt,'utc')}
 
- function formatDate(date, fmt, type) {
-    var o
+export function formatDate(date, fmt, type) {
+    let o
     if (type === 'locale') {
         o = {
             "M+": date.getMonth() + 1,                 //月份
@@ -14,7 +14,7 @@
             "S": date.getMilliseconds()             //毫秒
         }
         if (/(y+)/.test(fmt)) {//设置年
-            fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+            fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substring(4 - RegExp.$1.length));
         }
     } else if (type === 'utc' || type === 'UTC') {
         o = {
@@ -27,30 +27,30 @@
             "S": date.getUTCMilliseconds()             //毫秒
         };
         if (/(y+)/.test(fmt)) {//设置年
-            fmt = fmt.replace(RegExp.$1, (date.getUTCFullYear() + "").substr(4 - RegExp.$1.length));
+            fmt = fmt.replace(RegExp.$1, (date.getUTCFullYear() + "").substring(4 - RegExp.$1.length));
         }
     } else {
         throw Error("type参数不正确。")
     }
     //设置除了年以外的部分
-    for (var k in o) {
+    for (let k in o) {
         if (new RegExp("(" + k + ")").test(fmt)) {
-            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
         }
     }
     return fmt;
 }
 
 
- function parseDate(dateStr, fmt, type) {
+export function parseDate(dateStr, fmt, type) {
 
 
-    var date
-    var o
+    let date
+    let o
     if (type === 'locale') {
         date = new Date()
-        date.setMonth(0,1)
-        date.setHours(0,0,0,0)
+        date.setMonth(0, 1)
+        date.setHours(0, 0, 0, 0)
         o = {
             "y+": 'setFullYear',
             "M+": 'setMonth',                 //月份
@@ -63,8 +63,8 @@
 
     } else if (type === 'utc' || type === 'UTC') {
         date = new Date()
-        date.setUTCMonth(0,1)
-        date.setUTCHours(0,0,0,0)
+        date.setUTCMonth(0, 1)
+        date.setUTCHours(0, 0, 0, 0)
         o = {
             "y+": 'setUTCFullYear',
             "M+": 'setUTCMonth',                 //月份
@@ -79,10 +79,11 @@
         throw Error("type参数不正确。")
     }
 
-    for (var k in o) {
+    for (let k in o) {
         if (new RegExp("(" + k + ")").test(fmt)) {
             //console.log(k+":"+fmt.indexOf(RegExp.$1))
-            let val = dateStr.substr(fmt.indexOf(RegExp.$1), RegExp.$1.length)
+            let beginIndex = fmt.indexOf(RegExp.$1)
+            let val = dateStr.substring(beginIndex, beginIndex + RegExp.$1.length)
 
             date[o[k]](k === 'M+' ? val - 1 : val)
             //console.log((k === 'M+')+","+(val-1))
@@ -96,6 +97,3 @@
 }
 
 //console.log(parseDate('2020-06-25 14:50:01.123', 'yyyy-MM-dd hh:mm:ss.S', 'locale').toLocaleString())
-
-exports.formatDate=formatDate
-exports.parseDate=parseDate

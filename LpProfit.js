@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose()
 const open = require('sqlite').open
 const schedule = require('node-schedule')
 const ethers = require('ethers')
-const IUniswapV2Pair = require('@uniswap/v2-core/build/IUniswapV2Pair.json')
+import {IERC20} from './lib/constant'
 const config = require('./config')
 const dateUtil = require('./dateUtil')
 /**
@@ -16,15 +16,16 @@ const job = schedule.scheduleJob('0 0 * * * *', storePairState);
 
 /**
  * 存储各交易对状态：totalsupply,reserve0,reserve1
- *
+ * 这在v3中没什么用
  */
 async function storePairState() {
     console.log(new Date().toLocaleString() + "开始执行定时任务")
 
-    async function readContract(contract, pair, plat) {
+    async function readContract(contractToken0, contractToken1, pair, plat) {
         //console.log("查询交易对" + pair.name + ":" + pair.address)
-        const [reserves0, reserves1] = await contract.getReserves()
-        const totalsupply = await contract.totalSupply()
+        const reserves0  = await contractToken0.balanceOf(pair.address)
+        const reserves1  = await contractToken1.balanceOf(pair.address)
+        const totalsupply = 0 //todo v3中没有totalsupply这个概念
 
         rowArr.push([
             pair.address,
@@ -40,12 +41,13 @@ async function storePairState() {
     for (let plat of ['uniswap', 'sushiswap']) {
         const pairArr = require('./properties.json')[plat].pairObjArr
         for (let pair of pairArr) {
-            const contract = new ethers.Contract(pair.address, IUniswapV2Pair.abi, config.provider)
+            const contractToken0 = new ethers.Contract(config.tokens[pair.name.split('-')[0]].wrapped.address, IERC20.abi, config.provider)
+            const contractToken1 = new ethers.Contract(config.tokens[pair.name.split('-')[1]].wrapped.address, IERC20.abi, config.provider)
             try {
-                await readContract(contract, pair, plat)
+                await readContract(contractToken0, contractToken1, pair, plat)
             } catch (e) {
                 if (e.message.indexOf('failed to meet quorum') >= 0) {
-                    await readContract(contract, pair, plat).catch(e => {
+                    await readContract(contractToken0, contractToken1, pair, plat).catch(e => {
                         console.info("再次失败！")
                     })
                 } else {

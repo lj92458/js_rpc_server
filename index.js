@@ -1,13 +1,18 @@
 
 const config = require('./config')
-const accountService= require("./account_service")
+const accountService= require("./accountService")
 const productService= require("./productService")
 const orderService= require("./orderService")
 const hprose = require("hprose")
 const LpProfit= require("./LpProfit")
 
-//启动服务：node --harmony index.js arg1 arg2
-
+//启动服务：node --harmony index.js mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+/**
+ * SupportedChainId.MAINNET = 1,
+ * SupportedChainId.GOERLI = 5,
+ * SupportedChainId.CELO = 42220,
+ * SupportedChainId.CELO_ALFAJORES = 44787,
+ */
 
 startRpcServer()
 

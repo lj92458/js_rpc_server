@@ -1,5 +1,6 @@
 /**
- 手动调用。存储某个时间范围内的资金池状态，每小时只存一条数据。
+ 本文件需要被手动调用: node --harmony storePairState.js
+ 存储某个时间范围内的资金池状态，每小时只存一条数据。
  调用时，需要传递平台名称：uniswap,sushiswap.
  可传递某个pair的地址。如果不传就表示处理全部pair.
  */
@@ -14,7 +15,7 @@ const dateUtil = require('./dateUtil')
 const config = require('./config')
 
 const util = require('./util')
-const uniswapSDK = require('@uniswap/sdk')
+const uniswapSDK = require('@uniswap/v3-sdk')
 
 const format = 'yyyy-MM-dd hh:mm:ss'
 
@@ -23,10 +24,10 @@ let index = 2
 let pairAddress
 let plat
 if (process.argv.length > index) {
-    const args = process.argv.splice(index);
+    const args = process.argv.slice(index);
     plat = args[0]
     console.log(args[1] + "..." + JSON.stringify(args))
-    if (args[1] && args[1].indexOf('>') < 0 && args[1].indexOf('&') < 0) {
+    if (args[1] && args[1].indexOf('>') < 0 && args[1].indexOf('&') < 0) { //防止被人注入js
         pairAddress = args[1]
     }
 
@@ -108,7 +109,7 @@ liquidityPositionSnapshots(where:{
         console.log(new Date().toLocaleString() + "runDay开始处理pair:" + pair.address)
         //let pairAddress = '0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852'
         let symbolArr = pair.name.split('-')
-        let tokenObjArr = [config.tokens[symbolArr[0]], config.tokens[symbolArr[1]]]
+        let tokenObjArr = [config.tokens[symbolArr[0]].wrapped, config.tokens[symbolArr[1]].wrapped]
         let tokenA = new uniswapSDK.Token(config.chainId, tokenObjArr[0].address, tokenObjArr[0].decimals, tokenObjArr[0].symbol)
         let tokenB = new uniswapSDK.Token(config.chainId, tokenObjArr[1].address, tokenObjArr[1].decimals, tokenObjArr[1].symbol)
         let tokenArr = tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]
