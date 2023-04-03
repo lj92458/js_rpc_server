@@ -1,10 +1,6 @@
-//const sdkCore = require('@uniswap/sdk-core')
-//const ethers = require('ethers')
 import assert from 'assert'
-const config = require('./config')
-//const util = require("./util")
-//const https = require('https');
-import {createTrade, executeTrade} from './lib/trade'
+import {tokens, provider, wallet} from './config.js'
+import {createTrade, executeTrade} from './lib/trade.js'
 
 /* ethers.org使用手册：Contract对象
 调用某个智能合约，直接用address和abi构造Contractd对象。 这个对象的特性，请参考：
@@ -40,7 +36,6 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
 //todo config.initWallet(config.provider)
 
 
-
 /**
  * 提交一个订单，仅用于uniswap V3
  * @param coinPair {string} 格式：goods-money
@@ -55,14 +50,14 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
  */
 async function addOrderV3(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage, poolFee) {
     const [goods, money] = coinPair.toLowerCase().split("-")
-    const [goodsToken, moneyToken] = [config.tokens[goods].wrapped, config.tokens[money].wrapped]
-    assert(goodsToken&& moneyToken, "token 不存在：" + [goods, money])
+    const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
+    assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
     const [tokenIn, tokenOut] = orderType === "buy" ? [moneyToken, goodsToken] : [goodsToken, moneyToken]
     const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
 
-    let trade = await createTrade(config.provider, tokenIn, tokenOut, amountIn, amountOut, poolFee,slippage)
-    return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei, config.wallet.address)
+    let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
+    return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei, wallet.address)
 }
 
 
-exports.addOrder = addOrderV3
+export {addOrderV3 as addOrder}

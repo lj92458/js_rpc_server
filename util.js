@@ -1,9 +1,10 @@
 import assert from 'assert'
 import _Big from 'big.js'
 import toFormat from 'toformat'
+import JSBI from 'jsbi'
 
-const ethers = require('ethers')
-const sdkCore = require('@uniswap/sdk-core')
+import {Percent} from '@uniswap/sdk-core'
+
 export const Big = toFormat(_Big)
 
 export function bigNumToFloat(bigNum, decimals) {
@@ -83,11 +84,11 @@ export function adjustGasPrice(gasPrice) {
 /**
  * 将小数转化成百分数
  * @param value {Number|string} 小数或字符串形式的小数
- * @returns {sdkCore.Percent} 百分数
+ * @returns {Percent} 百分数
  */
 export function doubleToPersent(value) {
     const {str, num} = movePointRight2(value)
-    return new sdkCore.Percent(str, movePointRight("1", num))
+    return new Percent(str, movePointRight("1", num))
 
 }
 

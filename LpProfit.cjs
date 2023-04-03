@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose()
 const open = require('sqlite').open
 const schedule = require('node-schedule')
 const ethers = require('ethers')
-import {IERC20} from './lib/constant'
+const constant= require('./lib/constant')
 const config = require('./config')
 const dateUtil = require('./dateUtil')
 /**
@@ -11,7 +11,7 @@ const dateUtil = require('./dateUtil')
 
 
 //定时任务表达式格式：s(0-59) m(0-59) h(0-23) d(1-31) m(1-12) date(0-7)
-const job = schedule.scheduleJob('0 0 * * * *', storePairState);
+const job = schedule.scheduleJob('0 0 * * * *', storePairState)
 
 
 /**
@@ -39,10 +39,10 @@ async function storePairState() {
 
     let rowArr = []
     for (let plat of ['uniswap', 'sushiswap']) {
-        const pairArr = require('./properties.json')[plat].pairObjArr
+        const pairArr = require('./properties.js')[plat].pairObjArr
         for (let pair of pairArr) {
-            const contractToken0 = new ethers.Contract(config.tokens[pair.name.split('-')[0]].wrapped.address, IERC20.abi, config.provider)
-            const contractToken1 = new ethers.Contract(config.tokens[pair.name.split('-')[1]].wrapped.address, IERC20.abi, config.provider)
+            const contractToken0 = new ethers.Contract(config.tokens[pair.name.split('-')[0]].wrapped.address, constant.IERC20.abi, config.provider)
+            const contractToken1 = new ethers.Contract(config.tokens[pair.name.split('-')[1]].wrapped.address, constant.IERC20.abi, config.provider)
             try {
                 await readContract(contractToken0, contractToken1, pair, plat)
             } catch (e) {

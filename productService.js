@@ -1,15 +1,13 @@
-import {creatPoolWithticksFromPool, getPool} from "./lib/pool";
+import {creatPoolWithticksFromPool, getPool} from './lib/pool.js'
 import assert from 'assert'
-import {CurrencyAmount} from "@uniswap/sdk-core";
-import {getTokenAmount, poolFeeToNumber} from './util'
-
-const sdkCore = require('@uniswap/sdk-core')
-const v3SDK = require('@uniswap/v3-sdk')
-const ethers = require('ethers')
-const config = require('./config')
+import {CurrencyAmount, Price, Token} from '@uniswap/sdk-core'
+import {getTokenAmount, poolFeeToNumber} from './util.js'
+import {Pool} from '@uniswap/v3-sdk'
+import {utils} from 'ethers'
+import {provider, tokens} from './config.js'
 
 /**
- * 查询某个交易对的市场挂单。
+ * 查询某个交易对的市场挂单。耗时4到7秒
  * 注意：涉及到 x * y=k, x * sqrt(PriceX) =L, pool.liquidity, pool.sqrtRatioX96这些内容的，数据单位一律是聪、伟这些最小单位。
  * 如何从tehGraph获取多个tick？ https://github.com/Uniswap/v3-sdk/issues/72
  * @param coinPair {string} 交易对goods-money，例如：eth-usdc
@@ -21,9 +19,9 @@ const config = require('./config')
 export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poolFee) {
 
     const [goods, money] = coinPair.toLowerCase().split("-")
-    const [goodsToken, moneyToken] = [config.tokens[goods].wrapped, config.tokens[money].wrapped]
+    const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
     assert(goodsToken && goodsToken, "token 不存在：" + [goods, money])
-    let pool = await getPool(config.provider, goodsToken, moneyToken, poolFee)
+    let pool = await getPool(provider, goodsToken, moneyToken, poolFee)
     /*在调用pool.getOutputAmount函数之前，要确保pool里面有充足的tick可被访问。
       如果挂单价格递增0.1%， 100个挂单会引起10.5%的价格波动。如果挂单价格递增0.3%，100个挂单会引起35%的价格波动。如果r=f+ 0.2% = 0.5%,一百个挂单会引起65%的价格波动 . 所以我们最多处理65%的价格波动就行。
       那么65%的价格波动，涉及到多少个tick呢？解方程1.0001**n = 1.65，得n=log1.0001(1.65)= log(1.65)/log(1.0001)= 4984.
@@ -40,21 +38,21 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
     let bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
     //用买的办法(输入money)，模拟出市场卖单。然后我可以提交买单吃掉这些市场卖单。
     let asks = await createMarketOrder(pool, moneyToken, goodsToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
-    console.log(bids)//todo 注释掉这里的日志
-    console.log("=======================")
-    console.log(asks)
+    //console.log(bids)// 注释掉这里的日志
+    //console.log("=======================")
+    //console.log(asks)
     return {asks, bids}
 }
 
 /**
  * 辅助方法。利用v2的恒定乘积原理，生成市场挂单。
  * 注意：涉及到 x * y=k, x * sqrt(PriceX) =L, pool.liquidity, pool.sqrtRatioX96这些内容的，数据单位一律是聪、伟这些最小单位。
- * @param pool {v3SDK.Pool}
- * @param inputToken {sdkCore.Token}
- * @param outputToken {sdkCore.Token}
+ * @param pool {Pool}
+ * @param inputToken {Token}
+ * @param outputToken {Token}
  * @param marketOrderSize
  * @param r {Number} 价格下降比例。也就是orderStepRatio.
- * @param goodsToken {sdkCore.Token}
+ * @param goodsToken {Token}
  * @param poolFee {Number} 整数表示的费率。 500表示百万分之500，也就是0.0005，也就是0.05%.
  * @return orderArr {[[string,string]]}
  */
@@ -89,10 +87,10 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
         输入goods来试着获取money时，相当于在查询市场上的买单，收取手续费会导致money减小，也就是price减小。通过压低买单价格，来体现出手续费。
         输入money来试着获取goods时，相当于在查询市场上的卖单，收取手续费会导致goods减小，也就是price变大。通过抬高卖单价格，来体现出手续费。
          */
-        let price = new sdkCore.Price(goodsAmount, moneyAmount).toFixed(9)
-        let amount = goodsAmount.toFixed(9)
+        let price = new Price({baseAmount:goodsAmount, quoteAmount:moneyAmount}).toFixed(9)
+        let amount = goodsAmount.toFixed(goodsAmount.currency.decimals)
         /*
-        请在测试时验证下列猜想：
+        请在测试时验证下列猜想(在流动性不波动的情况下)：
         1.如果每次用相同的inputAmount
         1.1用卖的办法，模拟出市场买单，会发现市场买单具有相同地挂单量，价格逐渐降低(降得越来越慢)。
         1.2用买的办法，模拟出市场卖单，会发现市场卖单具有相同的资金量，价格逐渐升高(升得越来越快)、挂单量逐渐降低。
@@ -107,8 +105,8 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
 
 /**
  * 辅助createMarketOrder方法，计算inputAmount
- * @param pool {v3SDK.Pool}
- * @param inputToken {sdkCore.Token}
+ * @param pool {Pool}
+ * @param inputToken {Token}
  * @param r {Number} 价格下降比例
  * @param f {Number} 手续费费率
  * @return {CurrencyAmount<*>} inputAmount
@@ -130,18 +128,18 @@ function getInputAmount(pool, inputToken, r, f) {
 export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     let gasPrice
     if (moneySymbol === 'eth') {
-        gasPrice = await config.provider.getGasPrice()
-        let gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei")
+        gasPrice = await provider.getGasPrice()
+        let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
         return [Number(gasPriceGwei).toFixed(2), 1]
 
     } else {
         const [goods, money] = ['weth', moneySymbol]
-        let [goodsToken, moneyToken] = [config.tokens[goods].wrapped, config.tokens[money].wrapped]
+        let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
         assert(goodsToken && goodsToken, "token 不存在：" + [goods, money])
-        const [pool, gasPrice] = await Promise.all([getPool(config.provider, goodsToken, moneyToken, poolFee), config.provider.getGasPrice()])
+        const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
 
         let price = pool.priceOf(goodsToken).toFixed(9)
-        let gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei")
+        let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
         return [Number(gasPriceGwei).toFixed(2), price]
 
     }

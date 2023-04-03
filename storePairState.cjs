@@ -1,5 +1,5 @@
 /**
- 本文件需要被手动调用: node --harmony storePairState.js
+ 本文件需要被手动调用: node --harmony storePairState.cjs
  存储某个时间范围内的资金池状态，每小时只存一条数据。
  调用时，需要传递平台名称：uniswap,sushiswap.
  可传递某个pair的地址。如果不传就表示处理全部pair.
@@ -24,7 +24,7 @@ let index = 2
 let pairAddress
 let plat
 if (process.argv.length > index) {
-    const args = process.argv.slice(index);
+    const args = process.argv.slice(index)
     plat = args[0]
     console.log(args[1] + "..." + JSON.stringify(args))
     if (args[1] && args[1].indexOf('>') < 0 && args[1].indexOf('&') < 0) { //防止被人注入js
@@ -75,7 +75,7 @@ async function query(query, pairAddress, beginTime, endTime) {
             beginTime: beginTime,
             endTime: endTime,
         }
-    }).catch(err => console.error(err));
+    }).catch(err => console.error(err))
 
     //return result.data.swaps
     return result.data.liquidityPositionSnapshots
@@ -85,7 +85,7 @@ async function query(query, pairAddress, beginTime, endTime) {
 //每查询一次，提取一天的数据。并且从中提取每小时的数据(每小时只选择一条)
 //如果不传参数，就会处理所有交易对
 async function runDay(plat, pairAddress) {
-    const pairArr = require('./properties.json')[plat].pairObjArr
+    const pairArr = require('./properties.js')[plat].pairObjArr
 
     const QUERY_snapshot_day = gql`
 query querySnapshot($pairAddress: Bytes!,$beginTime: Int, $endTime: Int) {
@@ -131,7 +131,7 @@ liquidityPositionSnapshots(where:{
                     pair.address,
                     thisDay.getTime() / 1000,
                     nextDay.getTime() / 1000
-                ).catch(err => console.error(err));
+                ).catch(err => console.error(err))
 
                 if (objArr && objArr.length > 0) {
 

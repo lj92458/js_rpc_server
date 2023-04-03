@@ -16,7 +16,7 @@ process.argv.slice(2)，把chainId改成主网
 
 #### 使用说明
 
-1.  启动服务：node --harmony index.js mima chainId
+1.  启动服务：node --harmony index.cjs mima chainId env
       以太主网=1，celo=42220
 2.  xxxx
 3.  xxxx
@@ -39,9 +39,9 @@ process.argv.slice(2)，把chainId改成主网
                       参考 https://docs.uniswap.org/sdk/core/reference/overview
 1. 各种合约、代币的地址 https://docs.uniswap.org/contracts/v3/reference/deployments
 2. uniswap v3创建了新的常量：Ether, 代表以太币。追溯它的继承关系：Ether->NativeCurrency->BaseCurrency. 调用它的wrapped属性，可以得到weth
-   这使得eth具有和weth同等的地位，凡是能传入weth的地方，都能传入Ether(为了统一，应该调用一下wrapped属性). 创建对象：Ether.onChain(ChainId), 支持各种以太系的区块链【WMATIC代表MATIC. 但是不支持celo.】
+   这使得eth具有和weth同等的地位，凡是能传入weth的地方，都能传入Ether(为了统一，不论传入的是什么，都应该调用一下wrapped属性). 创建对象：Ether.onChain(ChainId), 支持各种以太系的区块链【WMATIC代表MATIC. 但是不支持celo.】
 
-3. tick是最小报价单位(可以是负数，表示价格在0~1之间)。TICK_SPACING翻译成“报价间距”，代表两个相邻报价之间间隔了多少个tick(或者说把这些tick分成小组，每组多少个tick; pool.tickBitmap和pool.ticks只存储每组第一个tick的状态)。
+3. tick是最小报价单位(可以是负数，表示价格在0~1之间)，假设tick=i,则1.0001的i次方就代表它所要表达的价格(用聪、wei等最小货币单位计量的价格)。TICK_SPACING翻译成“报价间距”，代表两个相邻报价之间间隔了多少个tick(或者说把这些tick分成小组，每组多少个tick; pool.tickBitmap和pool.ticks只存储每组第一个tick的状态)。
    报价间距的大小，仅仅影响流动性提供者的体验(价格范围精确到多少)、交易者的gas消耗量、手续费费率。TICK_SPACINGS的定义是{[amount in FeeAmount]: number;}，具体映射如下：
    FeeAmount.LOWEST=100，对应着间距1, //手续费0.01%，最小能允许你设置0.01%的做市范围(btc价格2万, 0.01%就是2)
    FeeAmount.LOW=500，对应着间距10, //手续费0.05%，最小能允许你设置0.1%的做市范围(btc价格2万, 0.1%就是20)

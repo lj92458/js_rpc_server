@@ -1,12 +1,12 @@
-
+//因为hprose要用require，所以干脆整个文件都用require,而不能用import
 const config = require('./config')
-const accountService= require("./accountService")
-const productService= require("./productService")
-const orderService= require("./orderService")
+const accountService = require("./accountService")
+const productService = require("./productService")
+const orderService = require("./orderService")
 const hprose = require("hprose")
-const LpProfit= require("./LpProfit")
+const LpProfit = require("./LpProfit")
 
-//启动服务：node --harmony index.js mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+//启动服务：node --harmony index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
 /**
  * SupportedChainId.MAINNET = 1,
  * SupportedChainId.GOERLI = 5,
@@ -17,7 +17,7 @@ const LpProfit= require("./LpProfit")
 startRpcServer()
 
 
-function startRpcServer(){
+function startRpcServer() {
     /*
     滑点：从你的交易指令发出，到你的交易被执行，如果这期间价格有变动，不是你当初获取到的价格了，那么你的交易是否应该继续被执行呢？
         你愿意容忍多少比例的变动？
@@ -27,15 +27,15 @@ function startRpcServer(){
      */
 
     ////////////////////////
-    const server = hprose.Server.create(config.serverUri);
-    server.addFunction(accountService.queryTokenBalance,);
+    const server = hprose.Server.create(config.serverUri)
+    server.addFunction(accountService.queryTokenBalance,)
     server.addFunction(productService.bookProduct)
     server.addFunction(productService.getGasPriceGweiAndEthPrice)
     server.addFunction(orderService.addOrder)
     server.addFunction(LpProfit.queryPairState)
     server.addFunction(config.getProp)
     server.addFunction(config.getConfig)
-    server.start();
+    server.start()
 }
 
 
