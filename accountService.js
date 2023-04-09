@@ -1,6 +1,6 @@
 import {IERC20} from './lib/constant.js'
 import {Contract, utils,} from 'ethers'
-import {provider, tokens} from './config.js'
+import {nativeToken, provider, tokens} from './config.js'
 import {bigNumToFloat} from './util.js'
 import assert from 'assert'
 
@@ -19,7 +19,7 @@ export function queryTokenBalance(ethAddress, symbolArr) {
         let tokenObj = tokens[symbol].wrapped
         assert(tokenObj, "token 不存在：" + symbol)
         tokenObjArr.push(tokenObj)
-        if (symbol === "eth") {
+        if (symbol === nativeToken) {
             promiseArr.push(provider.getBalance(ethAddress))
         } else {
             let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)

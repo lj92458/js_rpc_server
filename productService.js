@@ -4,7 +4,7 @@ import {CurrencyAmount, Price, Token} from '@uniswap/sdk-core'
 import {getTokenAmount, poolFeeToNumber} from './util.js'
 import {Pool} from '@uniswap/v3-sdk'
 import {utils} from 'ethers'
-import {provider, tokens} from './config.js'
+import {nativeToken, provider, tokens} from './config.js'
 
 /**
  * 查询某个交易对的市场挂单。耗时4到7秒
@@ -127,13 +127,13 @@ function getInputAmount(pool, inputToken, r, f) {
  */
 export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     let gasPrice
-    if (moneySymbol === 'eth') {
+    if (moneySymbol === nativeToken) {
         gasPrice = await provider.getGasPrice()
         let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
         return [Number(gasPriceGwei).toFixed(2), 1]
 
     } else {
-        const [goods, money] = ['weth', moneySymbol]
+        const [goods, money] = [nativeToken, moneySymbol]
         let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
         assert(goodsToken && goodsToken, "token 不存在：" + [goods, money])
         const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
