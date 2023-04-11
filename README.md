@@ -16,7 +16,7 @@ process.argv.slice(2)，把chainId改成主网
 
 #### 使用说明
 
-1.  启动服务：node --harmony index.cjs mima chainId env
+1.  启动服务：node index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
       以太主网=1，celo=42220
 2.  xxxx
 3.  xxxx

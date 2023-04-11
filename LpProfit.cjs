@@ -2,9 +2,12 @@ const sqlite3 = require('sqlite3').verbose()
 const open = require('sqlite').open
 const schedule = require('node-schedule')
 const ethers = require('ethers')
-const constant= require('./lib/constant')
-const config = require('./config')
-const dateUtil = require('./dateUtil')
+let constant
+import('./lib/constant.js').then(v => constant = v)
+let config
+import('./config.js').then(v => config = v)
+let dateUtil
+import('./dateUtil.js').then(v => dateUtil = v)
 /**
  * 定时存储uniswap各交易对的资金池状态(totalsupply,reserve0,reserve1).并提供查询功能。用来生成收益走势图。
  */

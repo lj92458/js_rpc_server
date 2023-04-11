@@ -1,21 +1,19 @@
+let config
+let accountService
+let productService
+let orderService
+let hprose
+let LpProfit
+
 //因为hprose要用require，所以干脆整个文件都用require,而不能用import
-const config = require('./config')
-const accountService = require("./accountService")
-const productService = require("./productService")
-const orderService = require("./orderService")
-const hprose = require("hprose")
-const LpProfit = require("./LpProfit")
-
-//启动服务：node --harmony index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
-/**
- * SupportedChainId.MAINNET = 1,
- * SupportedChainId.GOERLI = 5,
- * SupportedChainId.CELO = 42220,
- * SupportedChainId.CELO_ALFAJORES = 44787,
- */
-
-startRpcServer()
-
+async function init() {
+    config = await import('./config.js')
+    accountService = await import("./accountService.js")
+    productService = await import("./productService.js")
+    orderService = await import("./orderService.js")
+    hprose = require("hprose")
+    LpProfit = require("./LpProfit.cjs")
+}
 
 function startRpcServer() {
     /*
@@ -37,5 +35,15 @@ function startRpcServer() {
     server.addFunction(config.getConfig)
     server.start()
 }
+
+//启动服务：node --harmony index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+/**
+ * SupportedChainId.MAINNET = 1,
+ * SupportedChainId.GOERLI = 5,
+ * SupportedChainId.CELO = 42220,
+ * SupportedChainId.CELO_ALFAJORES = 44787,
+ */
+init().then(value => startRpcServer())
+
 
 
