@@ -20,7 +20,7 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
 
     const [goods, money] = coinPair.toLowerCase().split("-")
     const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-    assert(goodsToken && goodsToken, "token 不存在：" + [goods, money])
+    assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
     let pool = await getPool(provider, goodsToken, moneyToken, poolFee)
     /*在调用pool.getOutputAmount函数之前，要确保pool里面有充足的tick可被访问。
       如果挂单价格递增0.1%， 100个挂单会引起10.5%的价格波动。如果挂单价格递增0.3%，100个挂单会引起35%的价格波动。如果r=f+ 0.2% = 0.5%,一百个挂单会引起65%的价格波动 . 所以我们最多处理65%的价格波动就行。
@@ -87,7 +87,7 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
         输入goods来试着获取money时，相当于在查询市场上的买单，收取手续费会导致money减小，也就是price减小。通过压低买单价格，来体现出手续费。
         输入money来试着获取goods时，相当于在查询市场上的卖单，收取手续费会导致goods减小，也就是price变大。通过抬高卖单价格，来体现出手续费。
          */
-        let price = new Price({baseAmount:goodsAmount, quoteAmount:moneyAmount}).toFixed(9)
+        let price = new Price({baseAmount: goodsAmount, quoteAmount: moneyAmount}).toFixed(9)
         let amount = goodsAmount.toFixed(goodsAmount.currency.decimals)
         /*
         请在测试时验证下列猜想(在流动性不波动的情况下)：
@@ -127,6 +127,7 @@ function getInputAmount(pool, inputToken, r, f) {
  */
 export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     let gasPrice
+    moneySymbol = moneySymbol.toLowerCase()
     if (moneySymbol === nativeToken) {
         gasPrice = await provider.getGasPrice()
         let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
@@ -135,7 +136,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     } else {
         const [goods, money] = [nativeToken, moneySymbol]
         let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-        assert(goodsToken && goodsToken, "token 不存在：" + [goods, money])
+        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
         const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
 
         let price = pool.priceOf(goodsToken).toFixed(9)

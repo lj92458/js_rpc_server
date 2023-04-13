@@ -7,7 +7,7 @@
 import {Environment, tokens as allTokens} from './lib/constant.js'
 import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
 import {prop} from './properties.js'
-export const nativeToken = 'eth'
+export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
 export const rpc = {
     local: 'http://localhost:8545',
     net1: '',
