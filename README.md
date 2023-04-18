@@ -8,15 +8,14 @@
 
 
 #### 安装教程
-
-1.  上线时，要修改config.js,把process.argv.slice(3)改成
-process.argv.slice(2)，把chainId改成主网
-2.  本程序会自动创建数据库表。但是要确保相关路径/文件夹存在
-3.  xxxx
+0. 确保已安装pm2，如果没安装请参照官网。这个工具能确保node进程不会闪退
+1. 用pm2启动的node服务，process.argv参数数量跟node启动的完全一样。
+2. 本程序会自动创建数据库表。但是要确保相关路径/文件夹存在
+3. xxxx
 
 #### 使用说明
-
-1.  启动服务：node index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+0. 测试某个js文件，用node命令启动。如果比pm2少了一个参数，因此要在js文件后面额外补一个参数???
+1.  启动服务：pm2 start index.cjs --watch -- mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
       以太主网=1，celo=42220
 2.  xxxx
 3.  xxxx

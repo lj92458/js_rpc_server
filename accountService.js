@@ -1,6 +1,6 @@
 import {IERC20} from './lib/constant.js'
 import {Contract, utils,} from 'ethers'
-import {nativeToken, provider, tokens} from './config.js'
+import {provider, tokens, nativeToken} from './config.js'
 import {bigNumToFloat} from './util.js'
 import assert from 'assert'
 
@@ -26,19 +26,22 @@ export function queryTokenBalance(ethAddress, symbolArr) {
             promiseArr.push(contractERC20.balanceOf(ethAddress))
         }
     }//end for
-
-    return Promise.all(promiseArr).then((objArr) => {
-        let accountArr = []
-        for (let i = 0; i < symbolArr.length; i++) {
-            accountArr.push({
-                currency: symbolArr[i],
-                available: bigNumToFloat(objArr[i], tokenObjArr[i].decimals), //活动资金
-                hold: "0" //冻结资金
-            })
-        }
-
-        return accountArr
-    })
+    try {
+        return Promise.all(promiseArr).then((objArr) => {
+            let accountArr = []
+            for (let i = 0; i < symbolArr.length; i++) {
+                accountArr.push({
+                    currency: symbolArr[i],
+                    available: bigNumToFloat(objArr[i], tokenObjArr[i].decimals), //活动资金
+                    hold: "0" //冻结资金
+                })
+            }
+            return accountArr
+        })
+    } catch (e) {
+        console.error('queryTokenBalance异常：', e.stack || e)
+        throw e
+    }
 }
 
 

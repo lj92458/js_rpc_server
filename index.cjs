@@ -7,12 +7,48 @@ let LpProfit
 
 //因为hprose要用require，所以干脆整个文件都用require,而不能用import
 async function init() {
-    config = await import('./config.js')
-    accountService = await import("./accountService.js")
-    productService = await import("./productService.js")
-    orderService = await import("./orderService.js")
-    hprose = require("hprose")
-    LpProfit = require("./LpProfit.cjs")
+    try {
+        config = await import('./config.js');
+        accountService = await import("./accountService.js");
+        productService = await import("./productService.js");
+        orderService = await import("./orderService.js");
+        hprose = require("hprose");
+        LpProfit = require("./LpProfit.cjs");
+    } catch (e) {
+        console.error('init异常：', e.stack || e)
+    }
+}
+
+function logProcessEvent() {
+    //参数code表示退出码
+    process.on("exit", function (code) {
+        console.log(Date.now() + " exit: " + code)
+    });
+    //参数err表示发生的异常
+    process.on("uncaughtException", function (e) {
+        console.log(Date.now() + ' exception: ', e.stack || e);
+    });
+    process.on('unhandledRejection', (e, promise) => {
+        console.log('Unhandled Rejection at:', e.stack || e)
+    })
+
+    process.on('SIGTERM', signal => {
+        console.log(`Process ${process.pid} received a SIGTERM signal`)
+        //process.exit(0)
+    })
+
+    process.on('SIGINT', signal => {
+        console.log(`Process ${process.pid} has been interrupted`)
+        //process.exit(0)
+    })
+    process.on('beforeExit', code => {
+        // Can make asynchronous calls
+        setTimeout(() => {
+            console.log(`Process will exit with code: ${code}`)
+            //process.exit(code)
+        }, 100)
+    })
+
 }
 
 function startRpcServer() {
@@ -25,18 +61,23 @@ function startRpcServer() {
      */
 
     ////////////////////////
-    const server = hprose.Server.create(config.serverUri)
-    server.addFunction(accountService.queryTokenBalance,)
-    server.addFunction(productService.bookProduct)
-    server.addFunction(productService.getGasPriceGweiAndEthPrice)
-    server.addFunction(orderService.addOrder)
-    server.addFunction(LpProfit.queryPairState)
-    server.addFunction(config.getProp)
-    server.addFunction(config.getConfig)
-    server.start()
+    try {
+        const server = hprose.Server.create(config.serverUri)
+        server.addFunction(accountService.queryTokenBalance,)
+        server.addFunction(productService.bookProduct)
+        server.addFunction(productService.getGasPriceGweiAndEthPrice)
+        server.addFunction(orderService.addOrder)
+        //server.addFunction(LpProfit.queryPairState)
+        server.addFunction(config.getProp)
+        server.addFunction(config.getConfig)
+        server.start()
+    } catch (e) {
+        console.error('startRpcServer异常：', e.stack || e)
+
+    }
 }
 
-//启动服务：node --harmony index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+//启动服务：pm2 start index.cjs mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
 /**
  * SupportedChainId.MAINNET = 1,
  * SupportedChainId.GOERLI = 5,
@@ -44,6 +85,9 @@ function startRpcServer() {
  * SupportedChainId.CELO_ALFAJORES = 44787,
  */
 init().then(value => startRpcServer())
+logProcessEvent()
+
+
 
 
 

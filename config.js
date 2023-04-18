@@ -5,7 +5,7 @@
  * @uniswap/sdk-core 对其它sdk数据结构的抽象，用于多个sdk之间共享数据结构、互相传递数据
  */
 import {Environment, tokens as allTokens} from './lib/constant.js'
-import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
+import {providers, utils} from 'ethers'
 import {prop} from './properties.js'
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
 export const rpc = {

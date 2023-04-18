@@ -14,7 +14,7 @@ import('./dateUtil.js').then(v => dateUtil = v)
 
 
 //定时任务表达式格式：s(0-59) m(0-59) h(0-23) d(1-31) m(1-12) date(0-7)
-const job = schedule.scheduleJob('0 0 * * * *', storePairState)
+//const job = schedule.scheduleJob('0 0 * * * *', storePairState)
 
 
 /**

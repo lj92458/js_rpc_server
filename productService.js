@@ -32,15 +32,21 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
       当FeeAmount=10000时，费率=1%，TICK_SPACING=200，对该函数调用0.094次就能返回25个有效tick(涉及4984个).
       因为我们不会使用0.01%费率的池子，也就不会出现TICK_SPACING=1的情况。所以除了获取当前字节，还要获取左边2字节和右边2字节。
     */
-    pool = await creatPoolWithticksFromPool(pool, poolFee === 500 ? 2 : 1)
+    let bids, asks;
+    try {
+        pool = await creatPoolWithticksFromPool(pool, poolFee === 500 ? 2 : 1)
 
-    //用卖的办法(输入goods)，模拟出市场买单。然后我可以提交卖单吃掉这些市场买单。
-    let bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
-    //用买的办法(输入money)，模拟出市场卖单。然后我可以提交买单吃掉这些市场卖单。
-    let asks = await createMarketOrder(pool, moneyToken, goodsToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
-    //console.log(bids)// 注释掉这里的日志
+        //用卖的办法(输入goods)，模拟出市场买单。然后我可以提交卖单吃掉这些市场买单。
+        bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
+        //用买的办法(输入money)，模拟出市场卖单。然后我可以提交买单吃掉这些市场卖单。
+        asks = await createMarketOrder(pool, moneyToken, goodsToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
+    } catch (e) {
+        console.error('bookProduct异常：', e.stack || e)
+        throw e
+    }
+    //console.log(bids)//todo 注释掉这里的日志
     //console.log("=======================")
-    //console.log(asks)
+    //console.log(asks)//todo 注释掉这里的日志
     return {asks, bids}
 }
 
@@ -128,21 +134,26 @@ function getInputAmount(pool, inputToken, r, f) {
 export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     let gasPrice
     moneySymbol = moneySymbol.toLowerCase()
-    if (moneySymbol === nativeToken) {
-        gasPrice = await provider.getGasPrice()
-        let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
-        return [Number(gasPriceGwei).toFixed(2), 1]
+    try {
+        if (moneySymbol === nativeToken) {
+            gasPrice = await provider.getGasPrice()
+            let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+            return [Number(gasPriceGwei).toFixed(2), 1]
 
-    } else {
-        const [goods, money] = [nativeToken, moneySymbol]
-        let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
-        const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
+        } else {
+            const [goods, money] = [nativeToken, moneySymbol]
+            let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
+            assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+            const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
 
-        let price = pool.priceOf(goodsToken).toFixed(9)
-        let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
-        return [Number(gasPriceGwei).toFixed(2), price]
+            let price = pool.priceOf(goodsToken).toFixed(9)
+            let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+            return [Number(gasPriceGwei).toFixed(2), price]
 
+        }
+    } catch (e) {
+        console.error('getGasPriceGweiAndEthPrice异常：', e.stack || e)
+        throw e
     }
 }
 
