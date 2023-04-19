@@ -43,8 +43,8 @@ export let provider
 })()
 
 
-const jsonWallet = `{"address":"b0d1435590b4f14a5f4414f93489945546162ffc","id":"5a63696f-1fc9-4591-9630-dcdac63dcf1e","version":3,"Crypto":{"cipher":"aes-128-ctr","cipherparams":{"iv":"0aeffda1cdfefa0a6f562aa74ede2818"},"ciphertext":"a05f204b244d12cdb393a8eba901ab01f1bf68da0bf7c0f29eeb6d6405c8f089","kdf":"scrypt","kdfparams":{"salt":"69ef4fc24f87877c2aa16ff0a22c18c31365dcc7aa350a6bf918751e0f0d3001","n":131072,"dklen":32,"p":1,"r":8},"mac":"88b47b8fb496072fd23352fd1a50f7b99d59c15e69141a686eb8135bdc83b18a"},"x-ethers":{"client":"ethers.js","gethFilename":"UTC--2020-08-10T07-30-06.0Z--b0d1435590b4f14a5f4414f93489945546162ffc","mnemonicCounter":"61238297b9e423d2975f57697dcfd834","mnemonicCiphertext":"2852e5451056a74e8a9c0d3a2bc77bd0","path":"m/44'/60'/0'/0/0","locale":"en","version":"0.1"}}`
-export let wallet =null
+const jsonWallet = `{"address":"b0d1435590b4f14a5f4414f93489945546162ffc","id":"c0bbf106-dc26-4f0d-a874-bd02c201ac52","version":3,"crypto":{"cipher":"aes-128-ctr","cipherparams":{"iv":"5899508f17f0ffb191e14bc726804ef0"},"ciphertext":"c8720835016b45803f1c8f6e8b8f561b9cc39f4c5bd21c1e724191b208fe124d","kdf":"scrypt","kdfparams":{"salt":"5296251e5acbc8f9c2ca7c30d2803fdc51613e05501d4f651764786d2e5585d2","n":131072,"dklen":32,"p":1,"r":8},"mac":"04a4a74a63a0ebf16d4d7ecc570f815c1009eb937aaa99753f9b4a8f3dcf707a"},"x-ethers":{"client":"ethers.js","gethFilename":"UTC--2023-04-17T22-57-40.0Z--b0d1435590b4f14a5f4414f93489945546162ffc","mnemonicCounter":"5188331e1f573e599fce629394bcbd0d","mnemonicCiphertext":"c8cf9da637eadfdfeec21c958b0dc90b","path":"m/44'/60'/0'/0/0","locale":"en","version":"0.1"}}`
+export let wallet = null
 export const serverUri = "http://0.0.0.0:8090"
 //export const slippage = "0.002"//允许的滑点。当远程调用没有传来滑点时，才采用默认的滑点
 

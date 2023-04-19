@@ -43,7 +43,7 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
  * @param price {Number}
  * @param volume {Number}
  * @param maxWaitSeconds
- * @param gasPriceGwei
+ * @param gasPriceGwei{string}
  * @param slippage {Number|string} 滑点. 0.001表示0.1%
  * @param poolFee {number} 枚举类型FeeAmount的值：500表示百万分之500，也就是0.0005，也就是0.05%; 3000表示0.3%,10000表示1%
  * @returns {Promise<{orderId, nonce, hash}>}
@@ -57,7 +57,7 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
         const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
 
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
-        return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei, wallet.address)
+        return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei+'', wallet.address)
     } catch (e) {
         console.error('addOrder异常：', e.stack || e)
         throw e
