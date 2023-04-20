@@ -5,8 +5,9 @@
  * @uniswap/sdk-core 对其它sdk数据结构的抽象，用于多个sdk之间共享数据结构、互相传递数据
  */
 import {Environment, tokens as allTokens} from './lib/constant.js'
-import {providers, utils} from 'ethers'
+import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
 import {prop} from './properties.js'
+
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
 export const rpc = {
     local: 'http://localhost:8545',
@@ -17,8 +18,6 @@ export const rpc = {
 export const chainId = Number(process.argv.slice(2)[1]) || 1 //网络编号，由启动参数传来。
 export const env = process.argv.slice(2)[2] || 'MAINNET' //当前环境LOCAL, MAINNET, WALLET_EXTENSION
 export let tokens = allTokens[chainId] || null
-export const etherscanAPIKey = 'B3HWMMWXRKKDD6RQ69S2G5MCF6NTD35NZW'
-export const infuraAPIKey = "34922f85dc48411c9f1312b6031a71d6"
 export let provider
 (function createProvider() {
     //如果是本机客户端
@@ -26,9 +25,14 @@ export let provider
         provider = new providers.JsonRpcProvider(rpc.local)
     } else if (env === Environment.MAINNET) {//如果是远程公共服务
         //ethers.js包装过的provider，里面有多个provider，能对比各个provider返回的结果，防止被某个欺骗。
-        provider = getDefaultProvider(chainId, {
-            etherscan: etherscanAPIKey,
-            infura: infuraAPIKey
+        //请阅读源码：function ethDefaultProvider(network: string | Network) 或https://github.com/ethers-io/ethers.js/blob/main/src.ts/providers/default-provider.ts
+        provider = getDefaultProvider(chainId, {//如果要禁用某个服务节点，需要给apkKey赋值"-"
+            etherscan: 'B3HWMMWXRKKDD6RQ69S2G5MCF6NTD35NZW',
+            infura: '34922f85dc48411c9f1312b6031a71d6',
+            alchemy: null,
+            pocket: '3852b8d2eac766d395d2b85d',//支持celo
+            ankr: 'a769c35667e8f23271dd8ae9d396d9949d2b4c59b518932331b6aa947195a174', //支持celo  https://rpc.ankr.com/celo/a769c35667e8f23271dd8ae9d396d9949d2b4c59b518932331b6aa947195a174
+            cloudflare: null,
         })
     } else if (env === Environment.WALLET_EXTENSION) {// 浏览器扩展
         try {

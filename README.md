@@ -11,8 +11,8 @@
 0. 确保已安装pm2，如果没安装请参照官网。这个工具能确保node进程不会闪退
 1. 用pm2启动的node服务，process.argv参数数量跟node启动的完全一样。
 2. 本程序会自动创建数据库表。但是要确保相关路径/文件夹存在
-3. xxxx
-
+3. 需要授权SwapRouter合约能花费自己的token。不能从uniswap界面上操作，而是要调用trade.js里面的getTokenTransferApproval函数，对SwapRouter合约授权。或者在etherscan上调用该token的approve函数
+4. 请确保账户有足够的weth,而不是eth. 如果weth不足，请在etherscan.io调用weth的deposit函数充值。以太链上weth的合约地址是0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 #### 使用说明
 0. 测试某个js文件，用node命令启动。如果比pm2少了一个参数，因此要在js文件后面额外补一个参数???
 1.  启动服务：pm2 start index.cjs --watch -- mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
