@@ -136,6 +136,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     moneySymbol = moneySymbol.toLowerCase()
     try {
         if (moneySymbol === nativeToken) {
+            console.log(new Date().toLocaleString() + `: call getGasPrice 2 times`)
             gasPrice = await provider.getGasPrice()
             let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
             return [Number(gasPriceGwei).toFixed(2), 1]
@@ -144,6 +145,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
             const [goods, money] = [nativeToken, moneySymbol]
             let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+            console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
             const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
 
             let price = pool.priceOf(goodsToken).toFixed(9)

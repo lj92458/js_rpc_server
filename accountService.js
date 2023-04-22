@@ -10,7 +10,8 @@ import assert from 'assert'
  * @param symbolArr {string[]} 货币符号数组
  * @return 复杂对象组成的数组
  */
-export function queryTokenBalance(ethAddress, symbolArr) {
+export async function queryTokenBalance(ethAddress, symbolArr) {
+    //console.log('queryTokenBalance:' + ethAddress)
     ethAddress = utils.getAddress(ethAddress)//把格式变成包含大小写字母的，免得提示unchecksum address
     let promiseArr = []
     let tokenObjArr = []
@@ -27,17 +28,17 @@ export function queryTokenBalance(ethAddress, symbolArr) {
         }
     }//end for
     try {
-        return Promise.all(promiseArr).then((objArr) => {
-            let accountArr = []
-            for (let i = 0; i < symbolArr.length; i++) {
-                accountArr.push({
-                    currency: symbolArr[i],
-                    available: bigNumToFloat(objArr[i], tokenObjArr[i].decimals), //活动资金
-                    hold: "0" //冻结资金
-                })
-            }
-            return accountArr
-        })
+        console.log(new Date().toLocaleString() + `: call contractERC20 ${promiseArr.length} times`)
+        let objArr = await Promise.all(promiseArr)
+        let accountArr = []
+        for (let i = 0; i < symbolArr.length; i++) {
+            accountArr.push({
+                currency: symbolArr[i],
+                available: bigNumToFloat(objArr[i], tokenObjArr[i].decimals), //活动资金
+                hold: "0" //冻结资金
+            })
+        }
+        return accountArr
     } catch (e) {
         console.error('queryTokenBalance异常：', e.stack || e)
         throw e

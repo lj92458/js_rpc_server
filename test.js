@@ -48,7 +48,7 @@ console.log(balanceArr)
 let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
 console.log(gasQueryArr)
 let begin= new Date().getTime()
-let {asks, bids} = await bookProduct('wbtc-usdt', 100, 0.004, 3000)
+let {asks, bids} = await bookProduct('eth-usdc', 100, 0.004, 3000)
 console.log(`bookProduct耗时${new Date().getTime()-begin}毫秒`)
 //console.log(JSON.stringify(asks))
 //console.log("=======================")
@@ -75,5 +75,5 @@ function test3() {
     console.log(decodedData)
 }
 
-test2().then()
+test1().then()
 
