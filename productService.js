@@ -92,7 +92,7 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
         输入goods来试着获取money时，相当于在查询市场上的买单，收取手续费会导致money减小，也就是price减小。通过压低买单价格，来体现出手续费。
         输入money来试着获取goods时，相当于在查询市场上的卖单，收取手续费会导致goods减小，也就是price变大。通过抬高卖单价格，来体现出手续费。
          */
-        let price = new Price([{baseAmount: goodsAmount, quoteAmount: moneyAmount}]).toFixed(9)
+        let price = new Price({baseAmount: goodsAmount, quoteAmount: moneyAmount}).toFixed(9)
         let amount = goodsAmount.toFixed(goodsAmount.currency.decimals)
         /*
         请在测试时验证下列猜想(在流动性不波动的情况下)：
