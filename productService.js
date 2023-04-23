@@ -21,7 +21,6 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
     const [goods, money] = coinPair.toLowerCase().split("-")
     const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
     assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
-    let pool = await getPool(provider, goodsToken, moneyToken, poolFee)
     /*在调用pool.getOutputAmount函数之前，要确保pool里面有充足的tick可被访问。
       如果挂单价格递增0.1%， 100个挂单会引起10.5%的价格波动。如果挂单价格递增0.3%，100个挂单会引起35%的价格波动。如果r=f+ 0.2% = 0.5%,一百个挂单会引起65%的价格波动 . 所以我们最多处理65%的价格波动就行。
       那么65%的价格波动，涉及到多少个tick呢？解方程1.0001**n = 1.65，得n=log1.0001(1.65)= log(1.65)/log(1.0001)= 4984.
@@ -34,7 +33,7 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
     */
     let bids, asks;
     try {
-        pool = await creatPoolWithticksFromPool(pool, poolFee === 500 ? 2 : 1)
+        let pool = await creatPoolWithticksFromPool(await getPool(provider, goodsToken, moneyToken, poolFee))
 
         //用卖的办法(输入goods)，模拟出市场买单。然后我可以提交卖单吃掉这些市场买单。
         bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
@@ -93,7 +92,7 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
         输入goods来试着获取money时，相当于在查询市场上的买单，收取手续费会导致money减小，也就是price减小。通过压低买单价格，来体现出手续费。
         输入money来试着获取goods时，相当于在查询市场上的卖单，收取手续费会导致goods减小，也就是price变大。通过抬高卖单价格，来体现出手续费。
          */
-        let price = new Price({baseAmount: goodsAmount, quoteAmount: moneyAmount}).toFixed(9)
+        let price = new Price([{baseAmount: goodsAmount, quoteAmount: moneyAmount}]).toFixed(9)
         let amount = goodsAmount.toFixed(goodsAmount.currency.decimals)
         /*
         请在测试时验证下列猜想(在流动性不波动的情况下)：
