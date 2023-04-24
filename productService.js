@@ -33,7 +33,7 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
     */
     let bids, asks;
     try {
-        let pool = await creatPoolWithticksFromPool(await getPool(provider, goodsToken, moneyToken, poolFee))
+        let pool = await creatPoolWithticksFromPool(await getPool(provider, goodsToken, moneyToken, poolFee,false))
 
         //用卖的办法(输入goods)，模拟出市场买单。然后我可以提交卖单吃掉这些市场买单。
         bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
@@ -145,7 +145,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
             let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
             console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
-            const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
+            const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee, false), provider.getGasPrice()])
 
             let price = pool.priceOf(goodsToken).toFixed(9)
             let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
