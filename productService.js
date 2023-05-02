@@ -79,6 +79,9 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
     let inputAmountArr = []
     for (let i = 0, tmpPool = pool; i < marketOrderSize; i++) {
         let inputAmount = getInputAmount(tmpPool, inputToken, r, f)
+        if(Number(inputAmount.toFixed(9))===0){//如果市场深度太小
+                break;
+        }
         ;[outputAmountArr[i], tmpPool] = await tmpPool.getOutputAmount(inputAmount)
         inputAmountArr[i] = inputAmount
     }
