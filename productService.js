@@ -33,7 +33,7 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
     */
     let bids, asks;
     try {
-        let pool = await creatPoolWithticksFromPool(await getPool(provider, goodsToken, moneyToken, poolFee,false))
+        let pool = await creatPoolWithticksFromPool(await getPool(provider, goodsToken, moneyToken, poolFee, false))
 
         //用卖的办法(输入goods)，模拟出市场买单。然后我可以提交卖单吃掉这些市场买单。
         bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
@@ -79,8 +79,8 @@ async function createMarketOrder(pool, inputToken, outputToken, marketOrderSize,
     let inputAmountArr = []
     for (let i = 0, tmpPool = pool; i < marketOrderSize; i++) {
         let inputAmount = getInputAmount(tmpPool, inputToken, r, f)
-        if(Number(inputAmount.toFixed(9))===0){//如果市场深度太小
-                break;
+        if (Number(inputAmount.toFixed(9)) === 0) {//如果市场深度太小
+            break;
         }
         ;[outputAmountArr[i], tmpPool] = await tmpPool.getOutputAmount(inputAmount)
         inputAmountArr[i] = inputAmount
@@ -137,14 +137,14 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
     let gasPrice
     moneySymbol = moneySymbol.toLowerCase()
     try {
-        if (moneySymbol === nativeToken) {
+        if (moneySymbol === nativeToken || moneySymbol === 'w' + nativeToken) {
             console.log(new Date().toLocaleString() + `: call getGasPrice 2 times`)
             gasPrice = await provider.getGasPrice()
             let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
             return [Number(gasPriceGwei).toFixed(2), 1]
 
         } else {
-            const [goods, money] = [nativeToken, moneySymbol]
+            const [goods, money] = ['w' + nativeToken, moneySymbol]
             let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
             console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)

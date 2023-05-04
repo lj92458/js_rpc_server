@@ -17,10 +17,10 @@ export async function queryTokenBalance(ethAddress, symbolArr) {
     let tokenObjArr = []
     for (let symbol of symbolArr) {
         symbol = symbol.toLowerCase()
-        let tokenObj = tokens[symbol].wrapped
+        let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
         assert(tokenObj, "token 不存在：" + symbol)
         tokenObjArr.push(tokenObj)
-        if (symbol === nativeToken) {
+        if (symbol === nativeToken) {//nativeToken不属于智能合约，所以只能调用getBalance
             promiseArr.push(provider.getBalance(ethAddress))
         } else {
             let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
