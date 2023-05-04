@@ -16,7 +16,7 @@
 #### 使用说明
 0. 测试某个js文件，用node命令启动。如果比pm2少了一个参数，因此要在js文件后面额外补一个参数???
 1.  启动服务：pm2 start index.cjs --name eth --watch -- mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
-      以太主网=1，celo=42220
+      以太主网=1，celo=42220 各链网络编号https://chainlist.org/?search=celo
     结束服务： pm2 stop eth
 2. 考虑两种策略：
    1.冒进型，跟别人激烈争抢，尽量设大滑点，然后两个平台同时提交。这个亏起来很厉害的。
