@@ -38,18 +38,19 @@ import {getTokenTransferApproval} from "./lib/trade.js";
 //授权
 async function approval(symbol1, symbol2) {
     getTokenTransferApproval(tokens[symbol1], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)).then(obj => console.log(obj))
-    if (symbol2) getTokenTransferApproval(tokens[symbol2], 1000000, 30, 25).then(obj => console.log(obj))
+    if (symbol2) getTokenTransferApproval(tokens[symbol2], 1000000, 30, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)
+    ).then(obj => console.log(obj))
 }
 
 //approval('cusd', ).then()
 
 async function test1() {
-    let balanceArr = await queryTokenBalance('0x8E24feb043c963BD16e1B503e2b1fe21426221f5', ['eth', 'usdc'])
+    let balanceArr = await queryTokenBalance('0x8E24feb043c963BD16e1B503e2b1fe21426221f5', ['weth', 'usdc'])
     console.log(balanceArr)
     let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
     console.log(gasQueryArr)
     let begin = new Date().getTime()
-    let {asks, bids} = await bookProduct('eth-usdc', 100, 0.004, 3000)
+    let {asks, bids} = await bookProduct('weth-usdc', 100, 0.004, 500)
     console.log(`bookProduct耗时${new Date().getTime() - begin}毫秒`)
 //console.log(JSON.stringify(asks))
 //console.log("=======================")
@@ -58,7 +59,7 @@ async function test1() {
 
 async function test2() {
     test1().then(async value => {
-        await addOrder('eth-usdc',
+        await addOrder('weth-usdc',
             'sell',
             '1900',
             0.01,
