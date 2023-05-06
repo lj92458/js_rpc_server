@@ -37,15 +37,20 @@ import {getTokenTransferApproval} from "./lib/trade.js";
 
 //授权
 async function approval(symbol1, symbol2) {
-    getTokenTransferApproval(tokens[symbol1], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)).then(obj => console.log(obj))
-    if (symbol2) getTokenTransferApproval(tokens[symbol2], 1000000, 30, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)
-    ).then(obj => console.log(obj))
+    if (symbol1) {
+        getTokenTransferApproval(tokens[symbol1], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2))
+            .then(obj => console.log(obj))
+    }
+    if (symbol2) {
+        getTokenTransferApproval(tokens[symbol2], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)
+        ).then(obj => console.log(obj))
+    }
 }
 
-//approval('cusd', ).then()
+approval('weth', ).then()
 
 async function test1() {
-    let balanceArr = await queryTokenBalance('0x8E24feb043c963BD16e1B503e2b1fe21426221f5', ['weth', 'usdc'])
+    let balanceArr = await queryTokenBalance("0xb0d1435590b4f14a5f4414f93489945546162ffc", ['weth', 'usdc'])
     console.log(balanceArr)
     let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
     console.log(gasQueryArr)
