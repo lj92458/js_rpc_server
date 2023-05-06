@@ -47,7 +47,7 @@ async function approval(symbol1, symbol2) {
     }
 }
 
-approval('weth', ).then()
+//approval('weth', ).then()
 
 async function test1() {
     let balanceArr = await queryTokenBalance("0xb0d1435590b4f14a5f4414f93489945546162ffc", ['weth', 'usdc'])
