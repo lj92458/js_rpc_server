@@ -57,9 +57,9 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
         const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
 
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
-        return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei+'', wallet.address)
+        return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', wallet.address)
     } catch (e) {
-        console.error('addOrder异常：', e.stack || e)
+        console.error(new Date().toLocaleString() + ' addOrder异常：', e.stack || e)
         throw e
     }
 }

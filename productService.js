@@ -40,7 +40,7 @@ export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poo
         //用买的办法(输入money)，模拟出市场卖单。然后我可以提交买单吃掉这些市场卖单。
         asks = await createMarketOrder(pool, moneyToken, goodsToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
     } catch (e) {
-        console.error('bookProduct异常：', e.stack || e)
+        console.error(new Date().toLocaleString() + ' bookProduct异常：', e.stack || e)
         throw e
     }
     //console.log(bids)//todo 注释掉这里的日志
@@ -156,7 +156,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
 
         }
     } catch (e) {
-        console.error('getGasPriceGweiAndEthPrice异常：', e.stack || e)
+        console.error(new Date().toLocaleString() + ' getGasPriceGweiAndEthPrice异常：', e.stack || e)
         throw e
     }
 }
