@@ -7,6 +7,7 @@
 import {Environment, tokens as allTokens} from './lib/constant.js'
 import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
 import {prop} from './properties.js'
+import {ScanProvider} from './lib/ScanProvider.js'
 
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
 export const rpc = {
@@ -27,11 +28,11 @@ export let provider
         provider = new providers.JsonRpcProvider(rpc.local)
     } else if (env === Environment.MAINNET) {//如果是远程公共服务
         //ankr，pocket，infura都支持arbitrum
-        //provider = new EtherscanProvider(chainId, etherscanAPIKey) //arbitrumscan有时候卡。但是免费计划，能允许每秒五次调用呢。如果每3秒执行一次，每小时就是10600次，平均每秒2.9次
+        provider = new ScanProvider(chainId, etherscanAPIKey) //arbitrumscan有时候卡。但是免费计划，能允许每秒五次调用呢。如果每3秒执行一次，每小时就是10600次，平均每秒2.9次
         //还是卡，需要美元50美元才不卡.50美元能确保每天20万次调用(每小时八千次)。免费的每天10能调用万次(4166次每小时)。我的程序如果每3秒执行一次，每小时就是10600次。即使调到6秒每次，也不够用(要交50$).只能用美元支付
         //provider = new JsonRpcProvider('https://arbitrum-mainnet.infura.io/v3/da153625e5c247319b62d4b5a76fc639', chainId)
         //我的程序如果每3秒执行一次，每小时就是10600次,每个月763万次。根据https://www.ankr.com/docs/rpc-service/pricing 的价格列表，每次0.00002$,每月就是152$ 。如果6秒一次，就是76$。只能用美元支付。这是eth链的价格，其它链减半
-        provider = new providers.JsonRpcProvider('https://rpc.ankr.com/arbitrum/a769c35667e8f23271dd8ae9d396d9949d2b4c59b518932331b6aa947195a174', chainId)
+        //provider = new providers.JsonRpcProvider('https://rpc.ankr.com/arbitrum/a769c35667e8f23271dd8ae9d396d9949d2b4c59b518932331b6aa947195a174', chainId)
     } else if (env === Environment.WALLET_EXTENSION) {// 浏览器扩展
         try {
             provider = new providers.Web3Provider(window?.ethereum, 'any')
