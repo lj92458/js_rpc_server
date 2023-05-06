@@ -26,8 +26,8 @@ async function storePairState() {
 
     async function readContract(contractToken0, contractToken1, pair, plat) {
         //console.log("查询交易对" + pair.name + ":" + pair.address)
-        const reserves0  = await contractToken0.balanceOf(pair.address)
-        const reserves1  = await contractToken1.balanceOf(pair.address)
+        const reserves0 = await contractToken0.balanceOf(pair.address)
+        const reserves1 = await contractToken1.balanceOf(pair.address)
         const totalsupply = 0 //todo v3中没有totalsupply这个概念
 
         rowArr.push([
@@ -54,7 +54,7 @@ async function storePairState() {
                         console.info("再次失败！")
                     })
                 } else {
-                    console.info("查询pair异常:" + e.message)
+                    console.info(new Date().toLocaleString() + " 查询pair异常:" + e.message)
                 }
             }
         }

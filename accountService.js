@@ -40,7 +40,7 @@ export async function queryTokenBalance(ethAddress, symbolArr) {
         }
         return accountArr
     } catch (e) {
-        console.error('queryTokenBalance异常：', e.stack || e)
+        console.error(new Date().toLocaleString() + ' queryTokenBalance异常：', e.stack || e)
         throw e
     }
 }

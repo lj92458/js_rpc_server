@@ -15,7 +15,7 @@ async function init() {
         hprose = require("hprose");
         LpProfit = require("./LpProfit.cjs");
     } catch (e) {
-        console.error('init异常：', e.stack || e)
+        console.error(new Date().toLocaleString() + ' init异常：', e.stack || e)
     }
 }
 
@@ -72,7 +72,7 @@ function startRpcServer() {
         server.addFunction(config.getConfig)
         server.start()
     } catch (e) {
-        console.error('startRpcServer异常：', e.stack || e)
+        console.error(new Date().toLocaleString() + ' startRpcServer异常：', e.stack || e)
 
     }
 }
