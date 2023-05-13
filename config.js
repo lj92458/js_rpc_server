@@ -10,6 +10,16 @@ import {prop} from './properties.js'
 import {ScanProvider} from './lib/ScanProvider.js'
 
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
+export const minNativeToken = 0.001 //当eth数量少于minNativeToken时，自动从weth转换maxNativeToken过来，以支付gas费
+export const maxNativeToken = 0.05
+//是否支持weth10，如果支持，就能调用withdrawTo、depositTo，否则只有withdraw、deposit。目前只发现arbitrum支持weth10，而celo既是native又是erc20，因此它不需要deposit方法。
+export const supportWeth10 = false //就算支持weth10又怎么样呢？ 交易平台的充值，不支持通过调用合约函数。否则无法到账，要申诉，被人工处理。需要两天处理完
+export const whiteList = [//注意安全，从钱包提币，只能提到指定的白名单里。
+    //全部小写
+    '0x7b74755c1252804eaa265003c0a9e745c792d68f',//她的币安eth系
+    '0x6803c2566b114196e56949999b4bbbee413777f0',//我的币安eth系
+    '0x0e7a26909abecd20de80f849b41d692d40abe773',//我的okx
+]
 export const rpc = {
     local: 'http://localhost:8545',
     net1: '',

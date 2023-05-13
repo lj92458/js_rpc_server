@@ -49,6 +49,7 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
  * @returns {Promise<{orderId, nonce, hash}>}
  */
 export async function addOrder(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage, poolFee) {
+    console.log('addOrder: ' + JSON.stringify(arguments))
     try {
         const [goods, money] = coinPair.toLowerCase().split("-")
         const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]

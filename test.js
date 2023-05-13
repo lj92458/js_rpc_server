@@ -4,7 +4,7 @@ import SwapRouterAbi
 import ISwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json' assert {type: 'json'}
 import ethers, {utils} from 'ethers'
-import {queryTokenBalance} from './accountService.js'
+import {queryTokenBalance, sendToken, receiveToken} from './accountService.js'
 import {bookProduct, getGasPriceGweiAndEthPrice} from './productService.js'
 import {addOrder} from './orderService.js'
 import {provider, tokens} from "./config.js";
@@ -47,7 +47,28 @@ async function approval(symbol1, symbol2) {
     }
 }
 
-//approval('weth', ).then()
+async function testSendToken() {
+    let result = await sendToken(
+        "eth",
+        "0x0e7a26909abecd20de80f849b41d692d40abe773",
+        0.001,
+        true,
+        20,
+        utils.formatUnits(await provider.getGasPrice(), "gwei")
+    )
+    console.log('sendToken: ' + JSON.stringify(result))
+}
+
+async function testReceiveToken() {
+    await receiveToken(
+        "eth",
+        "txId",
+        0.001,
+        true,
+        20,
+        utils.formatUnits(await provider.getGasPrice(), "gwei")
+    )
+}
 
 async function test1() {
     let balanceArr = await queryTokenBalance("0xb0d1435590b4f14a5f4414f93489945546162ffc", ['weth', 'usdc'])
@@ -84,5 +105,6 @@ function test3() {
     console.log(decodedData)
 }
 
-test1().then()
-
+//approval('weth', ).then()
+//test1().then()
+testSendToken().then()

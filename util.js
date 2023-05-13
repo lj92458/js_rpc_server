@@ -145,3 +145,7 @@ export function getTokenAmount(liquidity, sqrtPriceX96, isToken0Amount) {
 export function poolFeeToNumber(poolFee) {
     return Number(movePointLeft(poolFee, 6))
 }
+
+export function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

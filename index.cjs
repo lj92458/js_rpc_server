@@ -64,6 +64,8 @@ function startRpcServer() {
     try {
         const server = hprose.Server.create(config.serverUri)
         server.addFunction(accountService.queryTokenBalance,)
+        server.addFunction(accountService.sendToken,)
+        server.addFunction(accountService.receiveToken,)
         server.addFunction(productService.bookProduct)
         server.addFunction(productService.getGasPriceGweiAndEthPrice)
         server.addFunction(orderService.addOrder)
