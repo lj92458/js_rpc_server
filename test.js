@@ -16,10 +16,9 @@ import {getTokenTransferApproval} from "./lib/trade.js";
 //const util = require("./util")
 //const https = require('https')
 
-// const myWallet= ethers.Wallet.fromMnemonic("")
-//
-//  console.log(myWallet.address)
-// myWallet.encrypt("").then(r => console.log("JsonWallet:"+r))
+//  const myWallet= ethers.Wallet.fromMnemonic("")
+// console.log(myWallet.address)
+//  myWallet.encrypt("").then(r => console.log(r))
 
 
 //https://api.etherscan.io/api?module=transaction&action=getstatus&txhash=0x3b4cd40bc15ccee3f166ea92665c1992d631cc4555956bb946843bb5c9ee19cc&apikey=YourApiKeyToken
@@ -107,4 +106,4 @@ function test3() {
 
 //approval('weth', ).then()
 //test1().then()
-testSendToken().then()
+//testSendToken().then()

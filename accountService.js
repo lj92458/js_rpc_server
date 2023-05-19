@@ -143,7 +143,7 @@ async function helpSendToken(contractERC20, toAddress, amount, decimals, maxWait
  * @param needWrap{boolean} 是否需要eth和weth之间转换。如果需要，当symbol是eth时，会自动把eth转成weth;当symbol是weth时，会自动把weth转成eth.
  * @param maxWaitSeconds{number}
  * @param gasPriceGwei{string}
- * @return {Promise<number>} 网络确认数量，-1表示异常
+ * @return {Promise<number>} 收到的金额，负数表示异常
  */
 export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSeconds, gasPriceGwei) {
     console.log('receiveToken: ' + JSON.stringify(arguments))
@@ -166,7 +166,7 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
                 await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei);
             }
         }
-        return confirmNumResult
+        return amount
     } catch (e) {
         console.error(e)
         return -1;
