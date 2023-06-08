@@ -5,11 +5,11 @@ import ISwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json' assert {type: 'json'}
 import ethers, {utils} from 'ethers'
 import {queryTokenBalance, sendToken, receiveToken} from './accountService.js'
-import {bookProduct, getGasPriceGweiAndEthPrice} from './productService.js'
-import {addOrder} from './orderService.js'
+import {bookProduct, getGasPriceGweiAndEthPrice, bookProductOneInch} from './productService.js'
+import {addOrder, addOrderOneInch} from './orderService.js'
 import {provider, tokens} from "./config.js";
 import {Pool,} from '@uniswap/v3-sdk'
-import {uniswapV3Factory} from "./lib/constant.js";
+import {AggregationRouterV5, SWAP_ROUTER_ADDRESS, uniswapV3Factory} from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
 
 //const config = require('./config')
@@ -35,13 +35,13 @@ import {getTokenTransferApproval} from "./lib/trade.js";
 // ).on('error', e => console.error(e))
 
 //授权
-async function approval(symbol1, symbol2) {
+async function approval(symbol1, symbol2, spenderAddress = SWAP_ROUTER_ADDRESS) {
     if (symbol1) {
-        getTokenTransferApproval(tokens[symbol1], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2))
+        getTokenTransferApproval(tokens[symbol1], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
             .then(obj => console.log(obj))
     }
     if (symbol2) {
-        getTokenTransferApproval(tokens[symbol2], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)
+        getTokenTransferApproval(tokens[symbol2], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress
         ).then(obj => console.log(obj))
     }
 }
@@ -75,11 +75,18 @@ async function test1() {
     let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
     console.log(gasQueryArr)
     let begin = new Date().getTime()
-    let {asks, bids} = await bookProduct('weth-usdc', 100, 0.004, 500)
+    let book = await bookProduct('weth-usdc', 100, 0.004, 500)
     console.log(`bookProduct耗时${new Date().getTime() - begin}毫秒`)
-//console.log(JSON.stringify(asks))
+//console.log(JSON.stringify(book.asks))
 //console.log("=======================")
-//console.log(JSON.stringify(bids))
+//console.log(JSON.stringify(book.bids))
+
+    begin = new Date().getTime()
+    book = await bookProductOneInch('weth-usdc', balanceArr[0].available, balanceArr[1].available)
+    console.log(`bookProductOneInch耗时${new Date().getTime() - begin}毫秒`)
+    console.log(JSON.stringify(book.asks))
+    console.log("=======================")
+    console.log(JSON.stringify(book.bids))
 }
 
 async function test2() {
@@ -104,6 +111,19 @@ function test3() {
     console.log(decodedData)
 }
 
-//approval('weth', ).then()
+async function testAddorder1inch() {
+    test1().then(async value => {
+        await addOrderOneInch('weth-usdc',
+            'sell',
+            '1832.9',
+            0.01,
+            120,
+            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            0.002);
+    })
+}
+
+//approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 //test1().then()
 //testSendToken().then()
+testAddorder1inch().then()

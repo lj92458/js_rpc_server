@@ -1,6 +1,10 @@
 import assert from 'assert'
-import {tokens, provider, wallet} from './config.js'
+import {tokens, provider, wallet, oneInchUrl, myAxios} from './config.js'
 import {createTrade, executeTrade} from './lib/trade.js'
+import {Big, movePointRight} from "./util.js";
+import axios from "axios";
+import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
+import {SWAP_ROUTER_ADDRESS} from "./lib/constant.js";
 
 /* ethers.org使用手册：Contract对象
 调用某个智能合约，直接用address和abi构造Contractd对象。 这个对象的特性，请参考：
@@ -33,7 +37,7 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
 //const paramSet = {}//去重，防止addOrder方法被莫名奇妙的重复调用
 //const defaultSlipage = util.doubleToPersent(config.slippage)
 
-//todo config.initWallet(config.provider)
+// config.initWallet(config.provider)
 
 
 /**
@@ -61,6 +65,54 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
         return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', wallet.address)
     } catch (e) {
         console.error(new Date().toLocaleString() + ' addOrder异常：', e.stack || e)
+        throw e
+    }
+}
+
+/**
+ * 1inch聚合交易。AggregationRouterV5合约地址：0x1111111254eeb25477b68fb85ed929f73a960582
+ * 文档：https://docs.1inch.io/docs/aggregation-protocol/api/swap-params/
+ * @param coinPair
+ * @param orderType
+ * @param price
+ * @param volume
+ * @param maxWaitSeconds
+ * @param gasPriceGwei
+ * @param slippage
+ * @return {Promise<{orderId, nonce, hash}>}
+ */
+export async function addOrderOneInch(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage) {
+    console.log('addOrderOneInch: ' + JSON.stringify(arguments))
+    try {
+        const [goods, money] = coinPair.toLowerCase().split("-")
+        const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
+        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+        const [tokenIn, tokenOut] = orderType === "buy" ? [moneyToken, goodsToken] : [goodsToken, moneyToken]
+        const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
+
+        //构造transaction，供ethers调用
+        let response = await myAxios.get('/swap', {
+            params: {//fromTokenAddress是做市商想抛出的币，因此对应着tokenOut
+                fromTokenAddress: tokenOut.address,
+                toTokenAddress: tokenIn.address,
+                amount: movePointRight(amountOut, tokenOut.decimals),
+                fromAddress: wallet.address,
+                slippage: (slippage * 100),
+                disableEstimate: false,
+            },
+        })
+
+        let transactionReq = response.data.tx
+        console.log('addOrderOneInch预计消耗gas量:' + transactionReq.gas)
+        return await sendTransactionByWallet({
+            ...fillTranRequest(transactionReq, null, null, null, null),
+        }, maxWaitSeconds, gasPriceGwei)
+
+        //
+
+    } catch (e) {
+        console.error(e.toJSON())
+        console.error(new Date().toLocaleString() + ' addOrderOneInch异常：', e.stack || e)
         throw e
     }
 }

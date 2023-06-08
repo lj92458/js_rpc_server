@@ -1,3 +1,5 @@
+import {Big} from './util.js'
+
 function apr(feeArr, tvl) {//fee和tvl的单位都是K
     let result = ''
     for (let fee of feeArr) {
@@ -25,3 +27,4 @@ test1(0.0005, 0.001)
 test1(0.0005, 0.003)
 test1(0.0005, 0.005)
 test1(0.0005, 0.010)
+console.log(Big('1').toFixed(6))

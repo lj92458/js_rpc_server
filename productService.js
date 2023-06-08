@@ -1,10 +1,11 @@
 import {creatPoolWithticksFromPool, getPool} from './lib/pool.js'
 import assert from 'assert'
 import {CurrencyAmount, Price, Token} from '@uniswap/sdk-core'
-import {getTokenAmount, poolFeeToNumber} from './util.js'
+import {getTokenAmount, movePointRight, poolFeeToNumber, Big} from './util.js'
 import {Pool} from '@uniswap/v3-sdk'
 import {utils} from 'ethers'
-import {nativeToken, provider, tokens} from './config.js'
+import {nativeToken, provider, tokens, oneInchUrl, myAxios} from './config.js'
+import axios from 'axios'
 
 /**
  * 查询某个交易对的市场挂单。耗时4到7秒
@@ -167,5 +168,63 @@ bookProduct("eth-usdc", 100, 0.03203).catch(e => {
     console.log(e + "" + e.message)
 })
  */
+
 //getGasPriceGweiAndEthPrice("usdc").then(arr=>{console.info(arr[0],arr[1])})
+
+
+/**
+ * 通过1inch查询多个dex的聚合行情
+ * @param coinPair goods-money
+ * @param goodsAmount 货物数量，浮点数
+ * @param moneyAmount 货币数量，浮点数
+ * @return {Promise<{asks: string[][], bids: string[][]}>}
+ */
+export async function bookProductOneInch(coinPair, goodsAmount, moneyAmount) {
+    try {
+        const [goods, money] = coinPair.toLowerCase().split("-")
+        const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
+        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+
+        let promiseAsks = myAxios.get('/quote', {
+            params: {//我要查询的卖单，就是做市商在卖goods
+                fromTokenAddress: goodsToken.address,
+                toTokenAddress: moneyToken.address,
+                amount: movePointRight(goodsAmount, goodsToken.decimals)
+            },
+        })
+        let promiseBids = myAxios.get('/quote', {
+            params: {//我要查询的买单，就是做市商想用money换来goods，这等于他在卖money
+                fromTokenAddress: moneyToken.address,
+                toTokenAddress: goodsToken.address,
+                amount: movePointRight(moneyAmount, moneyToken.decimals)
+            },
+        })
+
+        let responseArr = await Promise.all([promiseAsks, promiseBids])
+        //asks中的元素有4个子元素：price, volume, protocols, estimatedGas
+        let asks, bids
+
+        let data = responseArr[0].data
+        asks = [[
+            Big(data.toTokenAmount).div(data.fromTokenAmount).div(Big(10).pow(moneyToken.decimals - goodsToken.decimals)).toFixed(6),
+            Big(data.fromTokenAmount).div(goodsToken.decimals).toFixed(6),
+            JSON.stringify(data.protocols),
+            data.estimatedGas + ''
+        ]]
+
+        data = responseArr[1].data
+        bids = [[
+            Big(data.toTokenAmount).div(data.fromTokenAmount).div(Big(10).pow(goodsToken.decimals - moneyToken.decimals)).toFixed(6),
+            Big(data.fromTokenAmount).div(moneyToken.decimals).toFixed(6),
+            JSON.stringify(data.protocols),
+            data.estimatedGas + ''
+        ]]
+
+        return {asks, bids}
+    } catch (e) {
+        console.error(e.toJSON())
+        console.error(new Date().toLocaleString() + ' bookProductOneInch()异常：', e.stack || e)
+        throw e
+    }
+}
 

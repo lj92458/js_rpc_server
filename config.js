@@ -8,6 +8,9 @@ import {Environment, tokens as allTokens} from './lib/constant.js'
 import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
 import {prop} from './properties.js'
 import {ScanProvider} from './lib/ScanProvider.js'
+import axios from "axios";
+import * as https from "https";
+import * as http from "http";
 
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
 export const minNativeToken = 0.001 //当eth数量少于minNativeToken时，自动从weth转换maxNativeToken过来，以支付gas费
@@ -30,6 +33,12 @@ export const chainId = Number(process.argv.slice(2)[1]) || 1 //网络编号，�
 export const env = process.argv.slice(2)[2] || 'MAINNET' //当前环境LOCAL, MAINNET, WALLET_EXTENSION
 export let tokens = allTokens[chainId] || null
 export const etherscanAPIKey = '32YQ9W1FDCU1XGCUNQQF9Z5GG6R5B2BYNI' //https://api.arbiscan.io/api
+export const oneInchUrl = 'https://api.1inch.io/v5.0/' + chainId // 1inch端点
+export const myAxios = axios.create({
+    baseURL: oneInchUrl,
+    httpAgent: new http.Agent({keepAlive: true}),
+    httpsAgent: new https.Agent({keepAlive: true})
+})
 
 export let provider
 (function createProvider() {
