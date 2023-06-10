@@ -70,7 +70,7 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
 }
 
 /**
- * 1inch聚合交易。AggregationRouterV5合约地址：0x1111111254eeb25477b68fb85ed929f73a960582
+ * 1inch聚合交易。AggregationRouterV5合约arb地址：0x1111111254eeb25477b68fb85ed929f73a960582
  * 文档：https://docs.1inch.io/docs/aggregation-protocol/api/swap-params/
  * @param coinPair
  * @param orderType
@@ -92,10 +92,10 @@ export async function addOrderOneInch(coinPair, orderType, price, volume, maxWai
 
         //构造transaction，供ethers调用
         let response = await myAxios.get('/swap', {
-            params: {//fromTokenAddress是做市商想抛出的币，因此对应着tokenOut
-                fromTokenAddress: tokenOut.address,
-                toTokenAddress: tokenIn.address,
-                amount: movePointRight(amountOut, tokenOut.decimals),
+            params: {//fromTokenAddress是我要付出的币
+                fromTokenAddress: tokenIn.address,
+                toTokenAddress: tokenOut.address,
+                amount: movePointRight(amountIn, tokenIn.decimals),
                 fromAddress: wallet.address,
                 slippage: (slippage * 100),
                 disableEstimate: false,

@@ -4,7 +4,7 @@
  * @uniswap/v3-core   uniswap内核.
  * @uniswap/sdk-core 对其它sdk数据结构的抽象，用于多个sdk之间共享数据结构、互相传递数据
  */
-import {Environment, tokens as allTokens} from './lib/constant.js'
+import {Environment, tokens as allTokens, oneInchConf as allOneInchConf} from './lib/constant.js'
 import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
 import {prop} from './properties.js'
 import {ScanProvider} from './lib/ScanProvider.js'
@@ -23,6 +23,7 @@ export const whiteList = [//注意安全，从钱包提币，只能提到指定�
     '0x6803c2566b114196e56949999b4bbbee413777f0',//我的币安eth系
     '0x0e7a26909abecd20de80f849b41d692d40abe773',//我的okx
 ]
+export const hasUniswap = true //如果本条区块链没有uniswap，那么getGasPriceGweiAndEthPrice函数就要从 1inch的spot-price-aggregator预言机获取eth的价格了
 export const rpc = {
     local: 'http://localhost:8545',
     net1: '',
@@ -32,6 +33,7 @@ export const rpc = {
 export const chainId = Number(process.argv.slice(2)[1]) || 1 //网络编号，由启动参数传来。
 export const env = process.argv.slice(2)[2] || 'MAINNET' //当前环境LOCAL, MAINNET, WALLET_EXTENSION
 export let tokens = allTokens[chainId] || null
+export const oneInchConf = allOneInchConf[chainId]
 export const etherscanAPIKey = '32YQ9W1FDCU1XGCUNQQF9Z5GG6R5B2BYNI' //https://api.arbiscan.io/api
 export const oneInchUrl = 'https://api.1inch.io/v5.0/' + chainId // 1inch端点
 export const myAxios = axios.create({

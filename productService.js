@@ -3,9 +3,10 @@ import assert from 'assert'
 import {CurrencyAmount, Price, Token} from '@uniswap/sdk-core'
 import {getTokenAmount, movePointRight, poolFeeToNumber, Big} from './util.js'
 import {Pool} from '@uniswap/v3-sdk'
-import {utils} from 'ethers'
-import {nativeToken, provider, tokens, oneInchUrl, myAxios} from './config.js'
+import {BigNumber, Contract, utils} from 'ethers'
+import {nativeToken, provider, tokens, oneInchUrl, myAxios, hasUniswap, oneInchConf} from './config.js'
 import axios from 'axios'
+import oneInchOracleAbi from './lib/oneInchOracleAbi.json' assert {type: "json"}
 
 /**
  * 查询某个交易对的市场挂单。耗时4到7秒
@@ -145,14 +146,22 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
             return [Number(gasPriceGwei).toFixed(2), 1]
 
         } else {
+            let price, gasPriceGwei
             const [goods, money] = ['w' + nativeToken, moneySymbol]
             let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
-            console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
-            const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee, false), provider.getGasPrice()])
-
-            let price = pool.priceOf(goodsToken).toFixed(9)
-            let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+            if (hasUniswap) {
+                console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
+                const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee, false), provider.getGasPrice()])
+                price = pool.priceOf(goodsToken).toFixed(9)
+                gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+            } else {//没有uniswap，那么就从1inch的spot-price-aggregator预言机获取eth的价格了
+                console.log(new Date().toLocaleString() + `: call 1inch oracle & getGasPrice 2 times`)
+                let oneInchOracle = new Contract(oneInchConf.oracle, oneInchOracleAbi, provider)
+                const [bigNumberPrice, gasPrice] = await Promise.all([oneInchOracle.getRate(goodsToken.address, moneyToken.address, false), provider.getGasPrice()])
+                price = BigNumber.from(bigNumberPrice).div(10 ** moneyToken.decimals).toString()
+                gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+            }
             return [Number(gasPriceGwei).toFixed(2), price]
 
         }
@@ -186,17 +195,17 @@ export async function bookProductOneInch(coinPair, goodsAmount, moneyAmount) {
         assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
 
         let promiseAsks = myAxios.get('/quote', {
-            params: {//我要查询的卖单，就是做市商在卖goods
-                fromTokenAddress: goodsToken.address,
-                toTokenAddress: moneyToken.address,
-                amount: movePointRight(goodsAmount, goodsToken.decimals)
-            },
-        })
-        let promiseBids = myAxios.get('/quote', {
-            params: {//我要查询的买单，就是做市商想用money换来goods，这等于他在卖money
+            params: {//我要查询的卖单，是我想买的。from是以我为参照
                 fromTokenAddress: moneyToken.address,
                 toTokenAddress: goodsToken.address,
                 amount: movePointRight(moneyAmount, moneyToken.decimals)
+            },
+        })
+        let promiseBids = myAxios.get('/quote', {
+            params: {//我要查询的买单，是我想卖的
+                fromTokenAddress: goodsToken.address,
+                toTokenAddress: moneyToken.address,
+                amount: movePointRight(goodsAmount, goodsToken.decimals)
             },
         })
 
@@ -205,17 +214,18 @@ export async function bookProductOneInch(coinPair, goodsAmount, moneyAmount) {
         let asks, bids
 
         let data = responseArr[0].data
+        let goodsPrice = Big(data.fromTokenAmount).div(data.toTokenAmount).div(Big(10).pow(moneyToken.decimals - goodsToken.decimals))
         asks = [[
-            Big(data.toTokenAmount).div(data.fromTokenAmount).div(Big(10).pow(moneyToken.decimals - goodsToken.decimals)).toFixed(6),
-            Big(data.fromTokenAmount).div(goodsToken.decimals).toFixed(6),
+            goodsPrice.toFixed(6),
+            Big(moneyAmount).div(goodsPrice).toFixed(6), // Big(data.toTokenAmount).div(goodsToken.decimals).toFixed(6),
             JSON.stringify(data.protocols),
             data.estimatedGas + ''
         ]]
 
         data = responseArr[1].data
         bids = [[
-            Big(data.toTokenAmount).div(data.fromTokenAmount).div(Big(10).pow(goodsToken.decimals - moneyToken.decimals)).toFixed(6),
-            Big(data.fromTokenAmount).div(moneyToken.decimals).toFixed(6),
+            Big(data.toTokenAmount).div(data.fromTokenAmount).div(Big(10).pow(moneyToken.decimals - goodsToken.decimals)).toFixed(6),
+            goodsAmount + '', // Big(data.fromTokenAmount).div(goodsToken.decimals).toFixed(6),
             JSON.stringify(data.protocols),
             data.estimatedGas + ''
         ]]

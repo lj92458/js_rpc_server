@@ -82,7 +82,7 @@ async function test1() {
 //console.log(JSON.stringify(book.bids))
 
     begin = new Date().getTime()
-    book = await bookProductOneInch('weth-usdc', balanceArr[0].available, balanceArr[1].available)
+    book = await bookProductOneInch('weth-usdc', 1, 1)
     console.log(`bookProductOneInch耗时${new Date().getTime() - begin}毫秒`)
     console.log(JSON.stringify(book.asks))
     console.log("=======================")
@@ -124,6 +124,6 @@ async function testAddorder1inch() {
 }
 
 //approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-//test1().then()
+test1().then()
 //testSendToken().then()
-testAddorder1inch().then()
+//testAddorder1inch().then()
