@@ -7,10 +7,12 @@ import ethers, {utils} from 'ethers'
 import {queryTokenBalance, sendToken, receiveToken} from './accountService.js'
 import {bookProduct, getGasPriceGweiAndEthPrice, bookProductOneInch} from './productService.js'
 import {addOrder, addOrderOneInch} from './orderService.js'
-import {provider, tokens} from "./config.js";
+import {chainId, provider, tokens, wallet} from "./config.js";
 import {Pool,} from '@uniswap/v3-sdk'
 import {AggregationRouterV5, SWAP_ROUTER_ADDRESS, uniswapV3Factory} from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
+import {getActiveOrders, getOrderBookFusion, addOrderFusion} from "./lib/oneInchFusion.js";
+import {movePointRight, Big} from "./util.js";
 
 //const config = require('./config')
 //const util = require("./util")
@@ -69,38 +71,52 @@ async function testReceiveToken() {
     )
 }
 
-async function test1() {
+async function uniswapBook() {
     let balanceArr = await queryTokenBalance("0xb0d1435590b4f14a5f4414f93489945546162ffc", ['weth', 'usdc'])
     console.log(balanceArr)
     let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
     console.log(gasQueryArr)
     let begin = new Date().getTime()
     let book = await bookProduct('weth-usdc', 100, 0.004, 500)
-    console.log(`bookProduct耗时${new Date().getTime() - begin}毫秒`)
-//console.log(JSON.stringify(book.asks))
-//console.log("=======================")
-//console.log(JSON.stringify(book.bids))
-
-    begin = new Date().getTime()
-    book = await bookProductOneInch('weth-usdc', 1, 1)
-    console.log(`bookProductOneInch耗时${new Date().getTime() - begin}毫秒`)
+    console.log(`uniswapBook耗时${new Date().getTime() - begin}毫秒`)
     console.log(JSON.stringify(book.asks))
     console.log("=======================")
-    console.log(JSON.stringify(book.bids))
+    console.log(JSON.stringify(book.bids) + '\n')
+    return book
 }
 
-async function test2() {
-    test1().then(async value => {
+async function oneInchAggregationBook() {
+    let begin = new Date().getTime()
+    let book = await bookProductOneInch('weth-usdc', 0.001, 10)
+    console.log(`oneInchAggregationBook耗时${new Date().getTime() - begin}毫秒`)
+    console.log(JSON.stringify(book.asks))
+    console.log("=======================")
+    console.log(JSON.stringify(book.bids) + '\n')
+    return book
+}
+
+async function uniswapAddOrder() {
+    uniswapBook().then(async book => {
         await addOrder('weth-usdc',
             'sell',
-            '1900',
+            book.bids[0][0],
+            0.01,
+            120,
+            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            0.001,
+            500);
+        await addOrder('weth-usdc',
+            'buy',
+            book.asks[0][0],
             0.01,
             120,
             Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.001,
             500);
     })
+
 }
+
 
 function test3() {
     const iface = new ethers.utils.Interface(SwapRouterAbi.abi);
@@ -111,11 +127,18 @@ function test3() {
     console.log(decodedData)
 }
 
-async function testAddorder1inch() {
-    test1().then(async value => {
+async function oneInchAggregationAddOrder() {
+    oneInchAggregationBook().then(async book => {
         await addOrderOneInch('weth-usdc',
             'sell',
-            '1832.9',
+            book.bids[0][0],
+            0.01,
+            120,
+            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            0.002);
+        await addOrderOneInch('weth-usdc',
+            'buy',
+            book.asks[0][0],
             0.01,
             120,
             Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
@@ -123,7 +146,43 @@ async function testAddorder1inch() {
     })
 }
 
-//approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-test1().then()
-//testSendToken().then()
-//testAddorder1inch().then()
+async function oneInchFusionBook() {
+    let orders = await getActiveOrders(1, 10)
+    console.log('oneInchFusion ActiveOrders: ' + JSON.stringify(orders))
+    let book = await getOrderBookFusion('weth-usdc', 0.001, 10)
+    console.log('oneInchFusionBook: ' + JSON.stringify(book) + '\n')
+    return book
+}
+
+async function oneInchFusionAddOrder() {
+    oneInchFusionBook().then(async book => {
+            //sell
+            let addOrderResult = await addOrderFusion('weth-usdc',
+                'sell',
+                book.bids[0][0],
+                0.01,
+                null,
+                null,
+                null)
+            console.log("addOrderFusion sell" + JSON.stringify(addOrderResult))
+            //buy
+            addOrderResult = await addOrderFusion('weth-usdc',
+                'buy',
+                book.asks[0][0],
+                0.01,
+                null,
+                null,
+                null)
+            console.log("addOrderFusion buy" + JSON.stringify(addOrderResult))
+        }
+    )
+}
+
+
+//await approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+await uniswapBook()
+//await testSendToken().then()
+await oneInchAggregationBook()
+await oneInchFusionBook()
+//await oneInchAggregationAddOrder().then()
+//await oneInchFusionAddOrder()

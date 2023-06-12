@@ -1,7 +1,7 @@
 import {creatPoolWithticksFromPool, getPool} from './lib/pool.js'
 import assert from 'assert'
 import {CurrencyAmount, Price, Token} from '@uniswap/sdk-core'
-import {getTokenAmount, movePointRight, poolFeeToNumber, Big} from './util.js'
+import {getTokenAmount, movePointRight, poolFeeToNumber, Big, parseBookArgs} from './util.js'
 import {Pool} from '@uniswap/v3-sdk'
 import {BigNumber, Contract, utils} from 'ethers'
 import {nativeToken, provider, tokens, oneInchUrl, myAxios, hasUniswap, oneInchConf} from './config.js'
@@ -19,10 +19,7 @@ import oneInchOracleAbi from './lib/oneInchOracleAbi.json' assert {type: "json"}
  * @return 复杂对象： {ask:[[price:string,volume:string]],bid:[[price:string,volume:string]]}
  */
 export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poolFee) {
-
-    const [goods, money] = coinPair.toLowerCase().split("-")
-    const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-    assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+    const [goodsToken, moneyToken] = parseBookArgs(coinPair)
     /*在调用pool.getOutputAmount函数之前，要确保pool里面有充足的tick可被访问。
       如果挂单价格递增0.1%， 100个挂单会引起10.5%的价格波动。如果挂单价格递增0.3%，100个挂单会引起35%的价格波动。如果r=f+ 0.2% = 0.5%,一百个挂单会引起65%的价格波动 . 所以我们最多处理65%的价格波动就行。
       那么65%的价格波动，涉及到多少个tick呢？解方程1.0001**n = 1.65，得n=log1.0001(1.65)= log(1.65)/log(1.0001)= 4984.
@@ -190,9 +187,7 @@ bookProduct("eth-usdc", 100, 0.03203).catch(e => {
  */
 export async function bookProductOneInch(coinPair, goodsAmount, moneyAmount) {
     try {
-        const [goods, money] = coinPair.toLowerCase().split("-")
-        const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+        const [goodsToken, moneyToken] = parseBookArgs(coinPair)
 
         let promiseAsks = myAxios.get('/quote', {
             params: {//我要查询的卖单，是我想买的。from是以我为参照
@@ -214,9 +209,9 @@ export async function bookProductOneInch(coinPair, goodsAmount, moneyAmount) {
         let asks, bids
 
         let data = responseArr[0].data
-        let goodsPrice = Big(data.fromTokenAmount).div(data.toTokenAmount).div(Big(10).pow(moneyToken.decimals - goodsToken.decimals))
+        let goodsPrice = Big(data.fromTokenAmount).div(data.toTokenAmount).div(10 ** (moneyToken.decimals - goodsToken.decimals)).toFixed(6)
         asks = [[
-            goodsPrice.toFixed(6),
+            goodsPrice,
             Big(moneyAmount).div(goodsPrice).toFixed(6), // Big(data.toTokenAmount).div(goodsToken.decimals).toFixed(6),
             JSON.stringify(data.protocols),
             data.estimatedGas + ''
@@ -224,7 +219,7 @@ export async function bookProductOneInch(coinPair, goodsAmount, moneyAmount) {
 
         data = responseArr[1].data
         bids = [[
-            Big(data.toTokenAmount).div(data.fromTokenAmount).div(Big(10).pow(moneyToken.decimals - goodsToken.decimals)).toFixed(6),
+            Big(data.toTokenAmount).div(data.fromTokenAmount).div(10 ** (moneyToken.decimals - goodsToken.decimals)).toFixed(6),
             goodsAmount + '', // Big(data.fromTokenAmount).div(goodsToken.decimals).toFixed(6),
             JSON.stringify(data.protocols),
             data.estimatedGas + ''

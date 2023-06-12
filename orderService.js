@@ -1,7 +1,7 @@
 import assert from 'assert'
 import {tokens, provider, wallet, oneInchUrl, myAxios} from './config.js'
 import {createTrade, executeTrade} from './lib/trade.js'
-import {Big, movePointRight} from "./util.js";
+import {Big, movePointRight, parseAddOrderArgs} from "./util.js";
 import axios from "axios";
 import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
 import {SWAP_ROUTER_ADDRESS} from "./lib/constant.js";
@@ -55,12 +55,7 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
 export async function addOrder(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage, poolFee) {
     console.log('addOrder: ' + JSON.stringify(arguments))
     try {
-        const [goods, money] = coinPair.toLowerCase().split("-")
-        const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
-        const [tokenIn, tokenOut] = orderType === "buy" ? [moneyToken, goodsToken] : [goodsToken, moneyToken]
-        const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
-
+        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
         return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', wallet.address)
     } catch (e) {
@@ -84,11 +79,7 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
 export async function addOrderOneInch(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage) {
     console.log('addOrderOneInch: ' + JSON.stringify(arguments))
     try {
-        const [goods, money] = coinPair.toLowerCase().split("-")
-        const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
-        assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
-        const [tokenIn, tokenOut] = orderType === "buy" ? [moneyToken, goodsToken] : [goodsToken, moneyToken]
-        const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
+        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
 
         //构造transaction，供ethers调用
         let response = await myAxios.get('/swap', {
