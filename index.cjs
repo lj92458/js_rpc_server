@@ -1,4 +1,3 @@
-const {bookProductOneInch} = require("./productService.js");
 let config
 let accountService
 let productService
@@ -71,6 +70,7 @@ function startRpcServer() {
         server.addFunction(productService.getGasPriceGweiAndEthPrice)
         server.addFunction(productService.bookProductOneInch)
         server.addFunction(orderService.addOrder)
+        server.addFunction(orderService.addOrderOneInch)
         //server.addFunction(LpProfit.queryPairState)
         server.addFunction(config.getProp)
         server.addFunction(config.getConfig)
