@@ -74,7 +74,7 @@ async function testReceiveToken() {
 async function uniswapBook() {
     let balanceArr = await queryTokenBalance("0xb0d1435590b4f14a5f4414f93489945546162ffc", ['weth', 'usdc'])
     console.log(balanceArr)
-    let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
+    let gasQueryArr = await getGasPriceGweiAndEthPrice('usdc', 500)
     console.log(gasQueryArr)
     let begin = new Date().getTime()
     let book = await bookProduct('weth-usdc', 100, 0.004, 500)

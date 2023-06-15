@@ -149,7 +149,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
             if (hasUniswap) {
                 console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
-                const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee, false), provider.getGasPrice()])
+                const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, 500, false), provider.getGasPrice()])
                 price = pool.priceOf(goodsToken).toFixed(9)
                 gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
             } else {//没有uniswap，那么就从1inch的spot-price-aggregator预言机获取eth的价格了
