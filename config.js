@@ -4,14 +4,22 @@
  * @uniswap/v3-core   uniswap内核.
  * @uniswap/sdk-core 对其它sdk数据结构的抽象，用于多个sdk之间共享数据结构、互相传递数据
  */
-import {Environment, tokens as allTokens, oneInchConf as allOneInchConf} from './lib/constant.js'
-import {getDefaultProvider, providers, utils, Wallet} from 'ethers'
+import {
+    Environment,
+    tokens as allTokens,
+    oneInchConf as allOneInchConf,
+    smartContractWalletAddress, aggregate3ValueAbi
+} from './lib/constant.js'
+import {Contract, getDefaultProvider, providers, utils, Wallet} from 'ethers'
 import {prop} from './properties.js'
 import {ScanProvider} from './lib/ScanProvider.js'
 import axios from "axios";
 import * as https from "https";
 import * as http from "http";
+import {Contract as CallContract, Provider as CallProvider} from 'ethers-multicall'
+import jsonWallet from './lib/jsonWallet.json' assert {type: 'json'}
 
+export {CallContract, CallProvider}
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
 export const minNativeToken = 0.001 //当eth数量少于minNativeToken时，自动从weth转换maxNativeToken过来，以支付gas费
 export const maxNativeToken = 0.05
@@ -43,6 +51,7 @@ export const myAxios = axios.create({
 })
 
 export let provider
+export let callProvider
 (function createProvider() {
     //如果是本机客户端
     if (env === Environment.LOCAL) {
@@ -64,11 +73,13 @@ export let provider
     } else {
         throw new Error(`未知的env:${env}`)
     }
+    callProvider = new CallProvider(provider, chainId);
 })()
 
 
-const jsonWallet = `{"address":"b0d1435590b4f14a5f4414f93489945546162ffc","id":"c0bbf106-dc26-4f0d-a874-bd02c201ac52","version":3,"crypto":{"cipher":"aes-128-ctr","cipherparams":{"iv":"5899508f17f0ffb191e14bc726804ef0"},"ciphertext":"c8720835016b45803f1c8f6e8b8f561b9cc39f4c5bd21c1e724191b208fe124d","kdf":"scrypt","kdfparams":{"salt":"5296251e5acbc8f9c2ca7c30d2803fdc51613e05501d4f651764786d2e5585d2","n":131072,"dklen":32,"p":1,"r":8},"mac":"04a4a74a63a0ebf16d4d7ecc570f815c1009eb937aaa99753f9b4a8f3dcf707a"},"x-ethers":{"client":"ethers.js","gethFilename":"UTC--2023-04-17T22-57-40.0Z--b0d1435590b4f14a5f4414f93489945546162ffc","mnemonicCounter":"5188331e1f573e599fce629394bcbd0d","mnemonicCiphertext":"c8cf9da637eadfdfeec21c958b0dc90b","path":"m/44'/60'/0'/0/0","locale":"en","version":"0.1"}}`
 export let wallet = null
+export let smartContractWallet = null
+export let useSmartContractWallet = true
 export const serverUri = "http://0.0.0.0:8093"
 //export const slippage = "0.002"//允许的滑点。当远程调用没有传来滑点时，才采用默认的滑点
 
@@ -76,17 +87,20 @@ export const serverUri = "http://0.0.0.0:8093"
 export const dbPath = '/var/js_rpc_server_arbitrum/sqlite3.db'
 
 //根据启动参数，对程序进行初始化
-export function initWallet(provider) {
+export async function initWallet(provider) {
     let index = 2
     if (process.argv.length > index) {//如果附带了两个参数
         const args = process.argv.slice(index)
 
         if (!wallet) {
-            wallet = Wallet.fromEncryptedJsonSync(jsonWallet, args[0]).connect(provider)
-            console.log('wallet load succeed.Address:' + wallet.address)
+            let beginTime = Date.now()
+            wallet = Wallet.fromEncryptedJsonSync(JSON.stringify(jsonWallet), args[0]).connect(provider)
+            console.log('wallet load succeed.Address:' + wallet.address + ' ,time usded:' + (Date.now() - beginTime))
             wallet.getGasPrice().then(r => console.log('gas price:' + utils.formatUnits(r, "gwei")))
-            wallet.getBalance().then(num => console.log("wallet balance:" + utils.formatEther(num)))
-
+            wallet.getBalance().then(num => console.log(" EOA wallet balance:" + utils.formatEther(num)))
+            //智能合约钱包
+            smartContractWallet = new Contract(smartContractWalletAddress, aggregate3ValueAbi, provider)
+            console.log(" smart wallet balance:" + utils.formatEther(await provider.getBalance(smartContractWalletAddress)))
             return wallet
         }
     }
@@ -117,4 +131,4 @@ export function getConfig() {
 }
 
 //加载钱包
-initWallet(provider)
+initWallet(provider).then()

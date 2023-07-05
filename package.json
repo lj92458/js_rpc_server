@@ -24,6 +24,7 @@
     "cross-fetch": "^3.0.5",
     "decimal.js": "^10.4.3",
     "ethers": "5.7.2",
+    "ethers-multicall": "^0.2.3",
     "graphql": "16.6.0",
     "graphql-tag": "^2.11.0",
     "hardhat": "^2.13.0",

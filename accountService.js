@@ -1,12 +1,14 @@
-import {IERC20, weth10ABI, weth9ABI} from './lib/constant.js'
+import {IERC20, smartContractWalletAddress, weth10ABI, weth9ABI} from './lib/constant.js'
 import {Contract, utils,} from 'ethers'
 import {
+    CallContract,
+    callProvider,
     maxNativeToken,
     minNativeToken,
     nativeToken,
     provider,
     supportWeth10,
-    tokens,
+    tokens, useSmartContractWallet,
     wallet,
     whiteList
 } from './config.js'
@@ -31,15 +33,15 @@ export async function queryTokenBalance(ethAddress, symbolArr) {
         assert(tokenObj, "token 不存在：" + symbol)
         tokenObjArr.push(tokenObj)
         if (symbol === nativeToken) {//nativeToken不属于智能合约，所以只能调用getBalance
-            promiseArr.push(provider.getBalance(ethAddress))
+            promiseArr.push(callProvider.getEthBalance(ethAddress))
         } else {
-            let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
+            let contractERC20 = new CallContract(tokenObj.address, IERC20.abi)
             promiseArr.push(contractERC20.balanceOf(ethAddress))
         }
     }//end for
     try {
         console.log(new Date().toLocaleString() + `: call contractERC20 ${promiseArr.length} times`)
-        let objArr = await Promise.all(promiseArr)
+        let objArr = await callProvider.all(promiseArr)
         let accountArr = []
         for (let i = 0; i < symbolArr.length; i++) {
             accountArr.push({
@@ -129,7 +131,7 @@ async function helpSendToken(contractERC20, toAddress, amount, decimals, maxWait
             return await sendTransactionByWallet({...fillTranRequest(null, null, toAddress, movePointRight(amount, decimals)),}, maxWaitSeconds, gasPriceGwei)
         }
     } catch (e) {
-        console.error(e)
+        console.error(new Date().toLocaleString() + ' helpSendToken异常：', e.stack || e)
         return null;
     }
 }
@@ -168,7 +170,7 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
         }
         return amount
     } catch (e) {
-        console.error(e)
+        console.error(new Date().toLocaleString() + ' receiveToken异常：', e.stack || e)
         return -1;
     }
 }
@@ -178,7 +180,7 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
  * @return {Promise<void>}
  */
 async function checkNativeToken(minAmount, maxAmount, maxWaitSeconds, gasPriceGwei) {
-    let ethBalance = utils.formatEther(await wallet.getBalance())
+    let ethBalance = utils.formatEther(await provider.getBalance(useSmartContractWallet ? smartContractWalletAddress : wallet.address))
     console.log('当前eth余额' + ethBalance)
     if (ethBalance < minAmount) {
         console.log('eth数量小于' + minAmount + ', 开始从weth转入' + maxAmount)

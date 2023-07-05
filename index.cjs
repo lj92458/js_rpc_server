@@ -71,6 +71,7 @@ function startRpcServer() {
         server.addFunction(productService.bookProductOneInch)
         server.addFunction(orderService.addOrder)
         server.addFunction(orderService.addOrderOneInch)
+        server.addFunction(orderService.addTwoOrderOneInch)
         //server.addFunction(LpProfit.queryPairState)
         server.addFunction(config.getProp)
         server.addFunction(config.getConfig)

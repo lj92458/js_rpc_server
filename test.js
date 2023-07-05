@@ -72,12 +72,12 @@ async function testReceiveToken() {
 }
 
 async function uniswapBook() {
-    let balanceArr = await queryTokenBalance("0xb0d1435590b4f14a5f4414f93489945546162ffc", ['weth', 'usdc'])
+    let balanceArr = await queryTokenBalance("0xe068a01e11aCfA03A4c8de63dAd451E77a22CFfF", ['weth', 'usdc'])
     console.log(balanceArr)
     let gasQueryArr = await getGasPriceGweiAndEthPrice('usdc', 500)
     console.log(gasQueryArr)
     let begin = new Date().getTime()
-    let book = await bookProduct('weth-usdc', 100, 0.004, 500)
+    let book = await bookProduct('weth-usdc', 100, 0.0007, 500)
     console.log(`uniswapBook耗时${new Date().getTime() - begin}毫秒`)
     console.log(JSON.stringify(book.asks))
     console.log("=======================")
@@ -179,8 +179,8 @@ async function oneInchFusionAddOrder() {
 }
 
 
-//await approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-await uniswapBook()
+//await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+//await uniswapBook()
 //await testSendToken().then()
 await oneInchAggregationBook()
 //await oneInchFusionBook()

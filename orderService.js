@@ -1,10 +1,7 @@
-import assert from 'assert'
-import {tokens, provider, wallet, oneInchUrl, myAxios} from './config.js'
+import {myAxios, provider, smartContractWallet, wallet} from './config.js'
 import {createTrade, executeTrade} from './lib/trade.js'
-import {Big, movePointRight, parseAddOrderArgs} from "./util.js";
-import axios from "axios";
+import {movePointRight, parseAddOrderArgs} from "./util.js";
 import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
-import {SWAP_ROUTER_ADDRESS} from "./lib/constant.js";
 
 /* ethers.org使用手册：Contract对象
 调用某个智能合约，直接用address和abi构造Contractd对象。 这个对象的特性，请参考：
@@ -55,9 +52,12 @@ r/s/v参数：分别代表椭圆曲线签名的三个部分： transaction.r tra
 export async function addOrder(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage, poolFee) {
     console.log('addOrder: ' + JSON.stringify(arguments))
     try {
+        if (slippage < 0) {
+            slippage = 0.005
+        }
         const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
-        return executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', wallet.address)
+        return await executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', wallet.address)
     } catch (e) {
         console.error(new Date().toLocaleString() + ' addOrder异常：', e.stack || e)
         throw e
@@ -79,26 +79,11 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
 export async function addOrderOneInch(coinPair, orderType, price, volume, maxWaitSeconds, gasPriceGwei, slippage) {
     console.log('addOrderOneInch: ' + JSON.stringify(arguments))
     try {
-        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
-
-        //构造transaction，供ethers调用
-        let response = await myAxios.get('/swap', {
-            params: {//fromTokenAddress是我要付出的币
-                fromTokenAddress: tokenIn.address,
-                toTokenAddress: tokenOut.address,
-                amount: movePointRight(amountIn, tokenIn.decimals),
-                fromAddress: wallet.address,
-                slippage: (slippage * 100),
-                disableEstimate: false,
-            },
-        })
-
-        let transactionReq = response.data.tx
-        console.log('addOrderOneInch预计消耗gas量:' + transactionReq.gas)
+        let transaction = getTx(coinPair, orderType, price, volume, slippage)
+        console.log('addOrderOneInch预计消耗gas量:' + transaction.gas)
         return await sendTransactionByWallet({
-            ...fillTranRequest(transactionReq, null, null, null, null),
+            ...fillTranRequest(transaction, null, null, null, null),
         }, maxWaitSeconds, gasPriceGwei)
-
         //
 
     } catch (e) {
@@ -106,6 +91,76 @@ export async function addOrderOneInch(coinPair, orderType, price, volume, maxWai
         console.error(new Date().toLocaleString() + ' addOrderOneInch异常：', e.stack || e)
         throw e
     }
+}
+
+/**
+ * 提交两个oneInch订单，在同一个evm调用堆栈中完成。或者叫同一个事务。
+ * @param coinPair1
+ * @param orderType1
+ * @param price1
+ * @param volume1
+ * @param maxWaitSeconds1
+ * @param gasPriceGwei1
+ * @param slippage1
+ * @param coinPair2
+ * @param orderType2
+ * @param price2
+ * @param volume2
+ * @param maxWaitSeconds2
+ * @param gasPriceGwei2
+ * @param slippage2
+ * @return {Promise<{orderId, nonce, hash}>}
+ */
+export async function addTwoOrderOneInch(coinPair1, orderType1, price1, volume1, maxWaitSeconds1, gasPriceGwei1, slippage1,
+                                         coinPair2, orderType2, price2, volume2, maxWaitSeconds2, gasPriceGwei2, slippage2) {
+    console.log('addTwoOrderOneInch: ' + JSON.stringify(arguments))
+    try {
+        let [transaction1, transaction2] = await Promise.all([
+            getTx(coinPair1, orderType1, price1, volume1, slippage1),
+            getTx(coinPair2, orderType2, price2, volume2, slippage2)
+        ])
+        console.log('addTwoOrderOneInch预计消耗gas量:' + transaction1.gas + ', 和' + transaction1.gas)
+
+        let transaction = await smartContractWallet.populateTransaction.aggregate3Value([
+                {target: transaction1.to, allowFailure: false, value: transaction1.value, callData: transaction1.data},
+                {target: transaction2.to, allowFailure: false, value: transaction2.value, callData: transaction2.data},
+            ], {value: transaction1.value + transaction2.value}
+        )
+
+        //调用自己编写的合约
+        return await sendTransactionByWallet({
+            ...fillTranRequest(transaction, null, null, null, null),
+        }, maxWaitSeconds1, gasPriceGwei1)
+    } catch (e) {
+        console.error(e.toJSON())
+        console.error(new Date().toLocaleString() + ' addOrderOneInch异常：', e.stack || e)
+        throw e
+    }
+}
+
+/**
+ * 调用oneInch的swap接口，获得要提交的transaction
+ * @param coinPair
+ * @param orderType
+ * @param price
+ * @param volume
+ * @param slippage
+ * @return {Promise<{from,to,data,value,gasPrice,gas}>}
+ */
+async function getTx(coinPair, orderType, price, volume, slippage) {
+    const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
+    //构造transaction，供ethers调用
+    let response = await myAxios.get('/swap', {
+        params: {//fromTokenAddress是我要付出的币
+            fromTokenAddress: tokenIn.address,
+            toTokenAddress: tokenOut.address,
+            amount: movePointRight(amountIn, tokenIn.decimals),
+            fromAddress: wallet.address,
+            slippage: (slippage * 100),
+            disableEstimate: false,
+        },
+    })
+    return response.data.tx
 }
 
 
