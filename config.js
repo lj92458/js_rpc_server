@@ -18,6 +18,8 @@ import * as https from "https";
 import * as http from "http";
 import {Contract as CallContract, Provider as CallProvider} from 'ethers-multicall'
 import jsonWallet from './lib/jsonWallet.json' assert {type: 'json'}
+import {jsonA} from './lib/jsonA.js'
+import {jsonB} from './lib/jsonB.js'
 
 export {CallContract, CallProvider}
 export const nativeToken = 'eth' //不同的链，有不同的代币。一定要小写
@@ -38,8 +40,8 @@ export const rpc = {
     net2: '',
     net3: ''
 }
-export const chainId = Number(process.argv.slice(2)[1]) || 1 //网络编号，由启动参数传来。
-export const env = process.argv.slice(2)[2] || 'MAINNET' //当前环境LOCAL, MAINNET, WALLET_EXTENSION
+export const chainId = Number(process.argv.slice(2)[0]) || 1 //网络编号，由启动参数传来。
+export const env = process.argv.slice(2)[1] || 'MAINNET' //当前环境LOCAL, MAINNET, WALLET_EXTENSION
 export let tokens = allTokens[chainId] || null
 export const oneInchConf = allOneInchConf[chainId]
 export const etherscanAPIKey = '32YQ9W1FDCU1XGCUNQQF9Z5GG6R5B2BYNI' //https://api.arbiscan.io/api
@@ -94,7 +96,8 @@ export async function initWallet(provider) {
 
         if (!wallet) {
             let beginTime = Date.now()
-            wallet = Wallet.fromEncryptedJsonSync(JSON.stringify(jsonWallet), args[0]).connect(provider)
+            //wallet = Wallet.fromEncryptedJsonSync(JSON.stringify(jsonWallet), args[0]).connect(provider)
+            wallet = Wallet.fromEncryptedJsonSync(jsonA + jsonB, process.env.a + '#2017' + process.env.b).connect(provider)
             console.log('wallet load succeed.Address:' + wallet.address + ' ,time usded:' + (Date.now() - beginTime))
             wallet.getGasPrice().then(r => console.log('gas price:' + utils.formatUnits(r, "gwei")))
             wallet.getBalance().then(num => console.log(" EOA wallet balance:" + utils.formatEther(num)))

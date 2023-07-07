@@ -9,7 +9,12 @@ import {bookProduct, getGasPriceGweiAndEthPrice, bookProductOneInch} from './pro
 import {addOrder, addOrderOneInch} from './orderService.js'
 import {chainId, provider, tokens, wallet} from "./config.js";
 import {Pool,} from '@uniswap/v3-sdk'
-import {AggregationRouterV5, SWAP_ROUTER_ADDRESS, uniswapV3Factory} from "./lib/constant.js";
+import {
+    AggregationRouterV5,
+    smartContractWalletAddress,
+    SWAP_ROUTER_ADDRESS,
+    uniswapV3Factory
+} from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
 import {getActiveOrders, getOrderBookFusion, addOrderFusion} from "./lib/oneInchFusion.js";
 import {movePointRight, Big} from "./util.js";
@@ -17,10 +22,11 @@ import {movePointRight, Big} from "./util.js";
 //const config = require('./config')
 //const util = require("./util")
 //const https = require('https')
-
-//  const myWallet= ethers.Wallet.fromMnemonic("")
-// console.log(myWallet.address)
-//  myWallet.encrypt("").then(r => console.log(r))
+function createWallet(word, p) {
+    const myWallet = ethers.Wallet.fromMnemonic(word)
+    console.log(myWallet.address)
+    myWallet.encrypt(p).then(r => console.log(r))
+}
 
 
 //https://api.etherscan.io/api?module=transaction&action=getstatus&txhash=0x3b4cd40bc15ccee3f166ea92665c1992d631cc4555956bb946843bb5c9ee19cc&apikey=YourApiKeyToken
@@ -72,7 +78,7 @@ async function testReceiveToken() {
 }
 
 async function uniswapBook() {
-    let balanceArr = await queryTokenBalance("0xe068a01e11aCfA03A4c8de63dAd451E77a22CFfF", ['weth', 'usdc'])
+    let balanceArr = await queryTokenBalance(smartContractWalletAddress, ['weth', 'usdc'])
     console.log(balanceArr)
     let gasQueryArr = await getGasPriceGweiAndEthPrice('usdc', 500)
     console.log(gasQueryArr)
@@ -178,11 +184,11 @@ async function oneInchFusionAddOrder() {
     )
 }
 
-
-//await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+//createWallet('','')
+await approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 //await uniswapBook()
 //await testSendToken().then()
-await oneInchAggregationBook()
+//await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()

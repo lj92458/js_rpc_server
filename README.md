@@ -15,7 +15,9 @@
 4. 请确保账户有足够的weth,而不是eth. 如果weth不足，请在etherscan.io调用weth的deposit函数充值。以太链上weth的合约地址是0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 #### 使用说明
 0. 测试某个js文件，用node命令启动。如果比pm2少了一个参数，因此要在js文件后面额外补一个参数???
-1. 启动服务：pm2 start index.cjs --name eth --watch -- mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+1. 启动服务：Linux: a=xxx b=xxx pm2 start index.cjs --name eth --watch -- chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+   windows: $env:a="xxx";$env:b="xxx"; pm2 start index.cjs --name eth --watch --
+   chainId [LOCAL | MAINNET | WALLET_EXTENSION]
    以太主网=1，celo=42220 各链网络编号https://chainid.network 或https://github.com/ethereum-lists/chains
    结束服务： pm2 stop eth
 2. 考虑两种策略：
