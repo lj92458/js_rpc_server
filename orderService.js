@@ -124,7 +124,7 @@ export async function addTwoOrderOneInch(coinPair1, orderType1, price1, volume1,
         let transaction = await smartContractWallet.populateTransaction.aggregate3Value([
                 {target: transaction1.to, allowFailure: false, value: transaction1.value, callData: transaction1.data},
                 {target: transaction2.to, allowFailure: false, value: transaction2.value, callData: transaction2.data},
-            ], {value: transaction1.value + transaction2.value}
+            ], {value: transaction1.value + transaction2.value,}
         )
 
         //调用自己编写的合约
