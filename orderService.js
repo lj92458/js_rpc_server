@@ -1,7 +1,8 @@
-import {myAxios, provider, smartContractWallet, wallet} from './config.js'
+import {myAxios, provider, smartContractWallet, useSmartContractWallet, wallet} from './config.js'
 import {createTrade, executeTrade} from './lib/trade.js'
 import {movePointRight, parseAddOrderArgs} from "./util.js";
 import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
+import {smartContractWalletAddress} from "./lib/constant.js";
 
 /* ethers.org使用手册：Contract对象
 调用某个智能合约，直接用address和abi构造Contractd对象。 这个对象的特性，请参考：
@@ -57,7 +58,7 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
         }
         const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
-        return await executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', wallet.address)
+        return await executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', useSmartContractWallet ? smartContractWalletAddress : wallet.address)
     } catch (e) {
         console.error(new Date().toLocaleString() + ' addOrder异常：', e.stack || e)
         throw e
@@ -155,7 +156,7 @@ async function getTx(coinPair, orderType, price, volume, slippage) {
             fromTokenAddress: tokenIn.address,
             toTokenAddress: tokenOut.address,
             amount: movePointRight(amountIn, tokenIn.decimals),
-            fromAddress: wallet.address,
+            fromAddress: useSmartContractWallet ? smartContractWalletAddress : wallet.address,
             slippage: (slippage * 100),
             disableEstimate: false,
         },

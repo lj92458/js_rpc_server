@@ -185,10 +185,10 @@ async function oneInchFusionAddOrder() {
 }
 
 //createWallet('','')
-await approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+//await approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 //await uniswapBook()
 //await testSendToken().then()
-//await oneInchAggregationBook()
+await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()
