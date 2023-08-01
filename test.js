@@ -3,21 +3,22 @@ import SwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json' assert {type: 'json'}
 import ISwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json' assert {type: 'json'}
-import ethers, {utils} from 'ethers'
-import {queryTokenBalance, sendToken, receiveToken} from './accountService.js'
+import ethers, {Contract, utils} from 'ethers'
+import {queryTokenBalance, sendToken, receiveToken, helpSendToken} from './accountService.js'
 import {bookProduct, getGasPriceGweiAndEthPrice, bookProductOneInch} from './productService.js'
 import {addOrder, addOrderOneInch} from './orderService.js'
-import {chainId, provider, tokens, wallet} from "./config.js";
+import {chainId, nativeToken, provider, tokens, wallet} from "./config.js";
 import {Pool,} from '@uniswap/v3-sdk'
 import {
-    AggregationRouterV5,
+    AggregationRouterV5, IERC20,
     smartContractWalletAddress,
     SWAP_ROUTER_ADDRESS,
-    uniswapV3Factory
+    uniswapV3Factory, weth9ABI
 } from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
 import {getActiveOrders, getOrderBookFusion, addOrderFusion} from "./lib/oneInchFusion.js";
 import {movePointRight, Big} from "./util.js";
+import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
 
 //const config = require('./config')
 //const util = require("./util")
@@ -45,12 +46,12 @@ function createWallet(word, p) {
 //授权
 async function approval(symbol1, symbol2, spenderAddress = SWAP_ROUTER_ADDRESS) {
     if (symbol1) {
-        getTokenTransferApproval(tokens[symbol1], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
-            .then(obj => console.log(obj))
+        let result = await getTokenTransferApproval(tokens[symbol1], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
+        console.log(result)
     }
     if (symbol2) {
-        getTokenTransferApproval(tokens[symbol2], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress
-        ).then(obj => console.log(obj))
+        let result = await getTokenTransferApproval(tokens[symbol2], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
+        console.log(result)
     }
 }
 
@@ -184,11 +185,30 @@ async function oneInchFusionAddOrder() {
     )
 }
 
+async function wethWrap(isWrap, amount, tokenAddress) {
+    let contractWeth9 = new Contract(tokenAddress, weth9ABI.abi, provider)
+    if (isWrap) {//eth转weth(调用deposit)
+        const transaction = await contractWeth9.populateTransaction.deposit()
+        await sendTransactionByWallet({...fillTranRequest(transaction, null, null, movePointRight(amount, 18)),}, 30, 0.1)
+    } else {//weth转成eth(调用widthdraw)
+        const transaction = await contractWeth9.populateTransaction.widthdraw(movePointRight(amount, 18));
+        await sendTransactionByWallet({...fillTranRequest(transaction),}, 30, 0.1);
+    }
+}
+
+async function testHelpSendToken(symbol, amount) {
+    let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
+    let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
+    await helpSendToken(null, '0x0e7a26909abecd20de80f849b41d692d40abe773', amount, 18, 30, 0.1)
+}
+
 //createWallet('','')
-//await approval('weth', 'usdc', AggregationRouterV5).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+//await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 //await uniswapBook()
 //await testSendToken().then()
 await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()
+//await wethWrap(true, 0.047245, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
+await testHelpSendToken('weth', 0.103749)

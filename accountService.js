@@ -122,7 +122,7 @@ export async function sendToken(symbol, address, amount, needWrap, maxWaitSecond
 
 }
 
-async function helpSendToken(contractERC20, toAddress, amount, decimals, maxWaitSeconds, gasPriceGwei) {
+export async function helpSendToken(contractERC20, toAddress, amount, decimals, maxWaitSeconds, gasPriceGwei) {
     try {
         if (contractERC20) {
             const transaction = await contractERC20.populateTransaction.transfer(toAddress, movePointRight(amount, decimals))
