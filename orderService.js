@@ -56,7 +56,8 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
         if (slippage < 0) {
             slippage = 0.005
         }
-        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
+        let priceAdjusted = orderType === 'buy' ? price * (1 + slippage) : price * (1 - slippage)
+        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, priceAdjusted, volume);
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
         return await executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', useSmartContractWallet ? smartContractWalletAddress : wallet.address)
     } catch (e) {

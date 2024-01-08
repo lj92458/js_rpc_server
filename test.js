@@ -206,9 +206,9 @@ async function testHelpSendToken(symbol, amount) {
 //await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 //await uniswapBook()
 //await testSendToken().then()
-await oneInchAggregationBook()
+//await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()
-//await wethWrap(true, 0.047245, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
-await testHelpSendToken('weth', 0.103749)
+await wethWrap(true, 12.394843, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
+//await testHelpSendToken('weth', 0.103749)
