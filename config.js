@@ -75,6 +75,7 @@ export let callProvider
     } else {
         throw new Error(`未知的env:${env}`)
     }
+    provider.pollingInterval = 3000 //设置监听器的轮询时间间隔
     callProvider = new CallProvider(provider, chainId);
 })()
 

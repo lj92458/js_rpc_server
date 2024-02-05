@@ -92,6 +92,12 @@ async function uniswapBook() {
     return book
 }
 
+async function moreUniswapBook() {
+    for (let i = 0; i < 10; i++) {
+        await uniswapBook()
+    }
+}
+
 async function oneInchAggregationBook() {
     let begin = new Date().getTime()
     let book = await bookProductOneInch('weth-usdc', 0.001, 10)
@@ -204,11 +210,12 @@ async function testHelpSendToken(symbol, amount) {
 
 //createWallet('','')
 //await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-//await uniswapBook()
+await uniswapBook()
+//await moreUniswapBook()
 //await testSendToken().then()
 //await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()
-await wethWrap(true, 12.394843, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
+//await wethWrap(true, 12.394843, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
 //await testHelpSendToken('weth', 0.103749)

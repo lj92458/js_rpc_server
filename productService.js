@@ -1,4 +1,4 @@
-import {creatPoolWithticksFromPool, getPool} from './lib/pool.js'
+import {getPool} from './lib/pool.js'
 import assert from 'assert'
 import {CurrencyAmount, Price, Token} from '@uniswap/sdk-core'
 import {getTokenAmount, movePointRight, poolFeeToNumber, Big, parseBookArgs} from './util.js'
@@ -21,18 +21,19 @@ import oneInchOracleAbi from './lib/oneInchOracleAbi.json' assert {type: "json"}
 export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poolFee) {
     const [goodsToken, moneyToken] = parseBookArgs(coinPair)
     /*在调用pool.getOutputAmount函数之前，要确保pool里面有充足的tick可被访问。
-      如果挂单价格递增0.1%， 100个挂单会引起10.5%的价格波动。如果挂单价格递增0.3%，100个挂单会引起35%的价格波动。如果r=f+ 0.2% = 0.5%,一百个挂单会引起65%的价格波动 . 所以我们最多处理65%的价格波动就行。
-      那么65%的价格波动，涉及到多少个tick呢？解方程1.0001**n = 1.65，得n=log1.0001(1.65)= log(1.65)/log(1.0001)= 4984.
+      设f是资金池费率，r是挂单价格增量。如果r=0.1%， 100个挂单会引起10.5%的价格波动。如果r=0.3%，100个挂单会引起35%的价格波动。如果r=f+ 0.2% = 0.5%,一百个挂单会引起65%的价格波动 . 所以我们最多处理65%的价格波动就行。
+      （实际上可以让r=0.05%+0.02% =0.07%. (r只要大于f就行了，大多少都无所谓，我们不妨让它大0.02%). 100单只会引起7.2%的波动。20单只会引起1.4%的波动，eth价格2300美元，1.4%波动就是32美元，足够覆盖真实市场情况）
+      那么65%的价格波动，涉及到多少个tick呢？解方程1.0001**n = 1.65，得n=log1.0001(1.65)= log(1.65)/log(1.0001)= 4984。(实际上20单对应1.4%的波动，涉及到的tick是139个。100单对应7.2%的波动涉及695个tick)
       TickLen.getPopulatedTicksInWord函数，一次最多能返回一个字节(256个)的“被填充过的有效tick”(只返回被填充过的，而不是全部有效tick。有效tick是指tickNumber % TICK_SPACING =0的)。那么：
-      当FeeAmount=100时，费率=0.01%，TICK_SPACING=1，对该函数调用18.8次就能返回4984个有效tick.
-      当FeeAmount=500时，费率=0.05%，TICK_SPACING=10，对该函数调用1.88次就能返回498.4个有效tick(涉及4984个).
-      当FeeAmount=3000时，费率=0.3%，TICK_SPACING=60，对该函数调用0.133次就能返回83个有效tick(涉及4984个).
-      当FeeAmount=10000时，费率=1%，TICK_SPACING=200，对该函数调用0.094次就能返回25个有效tick(涉及4984个).
-      因为我们不会使用0.01%费率的池子，也就不会出现TICK_SPACING=1的情况。所以除了获取当前字节，还要获取左边2字节和右边2字节。
+      当FeeAmount=100时，费率=0.01%，TICK_SPACING=1，对该函数调用4984/1/256=19.46次就能返回4984个有效tick.
+      当FeeAmount=500时，费率=0.05%，TICK_SPACING=10，对该函数调用4984/10/256=1.94次就能返回498.4个有效tick(覆盖4984个). (实际上如果只想覆盖139个tick,就只需调用139/10/256=0.054次；覆盖695个tick需调用0.271次)
+      当FeeAmount=3000时，费率=0.3%，TICK_SPACING=60，对该函数调用4984/60/256=0.32次就能返回83个有效tick(覆盖4984个).
+      当FeeAmount=10000时，费率=1%，TICK_SPACING=200，对该函数调用4984/200/256=0.097次就能返回25个有效tick(覆盖4984个).
+      因为我们不会使用0.01%费率的池子，也就不会出现TICK_SPACING=1的情况。所以除了获取当前字节，还要获取左边2字节和右边2字节。共调用TickLen.getPopulatedTicksInWord函数的次数：1+2+2=5次。每调用一次，返回的数据量有点大。
     */
     let bids, asks;
     try {
-        let pool = await creatPoolWithticksFromPool(await getPool(provider, goodsToken, moneyToken, poolFee, false))
+        let pool = await getPool(provider, goodsToken, moneyToken, poolFee, marketOrderSize, orderStepRatio)
 
         //用卖的办法(输入goods)，模拟出市场买单。然后我可以提交卖单吃掉这些市场买单。
         bids = await createMarketOrder(pool, goodsToken, moneyToken, marketOrderSize, orderStepRatio, goodsToken, poolFee)
@@ -149,7 +150,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
             if (hasUniswap) {
                 console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
-                const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, 500, false), provider.getGasPrice()])
+                const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, 500), provider.getGasPrice()])
                 price = pool.priceOf(goodsToken).toFixed(9)
                 gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
             } else {//没有uniswap，那么就从1inch的spot-price-aggregator预言机获取eth的价格了
