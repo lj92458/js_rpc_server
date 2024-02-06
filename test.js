@@ -210,8 +210,8 @@ async function testHelpSendToken(symbol, amount) {
 
 //createWallet('','')
 //await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-await uniswapBook()
-//await moreUniswapBook()
+//await uniswapBook()
+await moreUniswapBook()
 //await testSendToken().then()
 //await oneInchAggregationBook()
 //await oneInchFusionBook()
