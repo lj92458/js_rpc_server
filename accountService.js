@@ -8,7 +8,8 @@ import {
     nativeToken,
     provider,
     supportWeth10,
-    tokens, useSmartContractWallet,
+    tokens,
+    useSmartContractWallet,
     wallet,
     whiteList
 } from './config.js'
@@ -70,7 +71,7 @@ export async function queryTokenBalance(ethAddress, symbolArr) {
 export async function sendToken(symbol, address, amount, needWrap, maxWaitSeconds, gasPriceGwei) {
     assert(whiteList.includes(address.toLowerCase()), '地址没在whiteList: ' + address)
     await checkNativeToken(minNativeToken, maxNativeToken, maxWaitSeconds, gasPriceGwei)
-
+    let amountInBaseUnit = movePointRight(amount, tokenObj.decimals)
     console.log('sendToken: ' + JSON.stringify(arguments))
     symbol = symbol.toLowerCase()
     let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
@@ -82,10 +83,10 @@ export async function sendToken(symbol, address, amount, needWrap, maxWaitSecond
     if (symbol === nativeToken) {
         if (needWrap) {//把weth转成eth并发送(调用weth10的withdrawTo可完成这两步，但是weth9没有withdrawTo，只好调用withdraw然后发送)
             if (supportWeth10) {//withdrawTo 【用不上，因为币安不支持合约调用形式的转账】
-                const transaction = await contractWeth10.populateTransaction.withdrawTo(address, movePointRight(amount, tokenObj.decimals))
+                const transaction = await contractWeth10.populateTransaction.withdrawTo(address, amountInBaseUnit)
                 return await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei)
             } else {//withdraw且sendETH
-                const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(amount, tokenObj.decimals))
+                const transaction = await contractWeth9.populateTransaction.withdraw(amountInBaseUnit)
                 firstStepResult = await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei)
                 if (firstStepResult?.hash) {//sendETH
                     return await helpSendToken(null, address, amount, tokenObj.decimals, maxWaitSeconds, gasPriceGwei)
@@ -99,14 +100,14 @@ export async function sendToken(symbol, address, amount, needWrap, maxWaitSecond
             if (supportWeth10) {//depositTo 【用不上，因为币安不支持合约调用形式的转账】
                 const transaction = await contractWeth10.populateTransaction.depositTo(address)
                 let result = await sendTransactionByWallet(
-                    {...fillTranRequest(transaction, null, null, movePointRight(amount, tokenObj.decimals)),}, maxWaitSeconds, gasPriceGwei)
+                    {...fillTranRequest(transaction, null, null, amountInBaseUnit),}, maxWaitSeconds, gasPriceGwei)
                 console.log(new Date().toLocaleString() + ' depositTo给1个参数，正常')
                 return result
 
             } else {//deposit且transfer
                 const transaction = await contractWeth9.populateTransaction.deposit();
                 firstStepResult = await sendTransactionByWallet(
-                    {...fillTranRequest(transaction, null, null, movePointRight(amount, tokenObj.decimals)),}, maxWaitSeconds, gasPriceGwei);
+                    {...fillTranRequest(transaction, null, null, amountInBaseUnit),}, maxWaitSeconds, gasPriceGwei);
                 console.log(new Date().toLocaleString() + ' deposit给0个参数，正常')
                 if (firstStepResult?.hash) {//sendETH
                     return await helpSendToken(contractERC20, address, amount, tokenObj.decimals, maxWaitSeconds, gasPriceGwei)

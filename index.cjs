@@ -72,6 +72,7 @@ function startRpcServer() {
         server.addFunction(orderService.addOrder)
         server.addFunction(orderService.addOrderOneInch)
         server.addFunction(orderService.addTwoOrderOneInch)
+        server.addFunction(orderService.cancelOrder)
         //server.addFunction(LpProfit.queryPairState)
         server.addFunction(config.getProp)
         server.addFunction(config.getConfig)

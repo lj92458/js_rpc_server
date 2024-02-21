@@ -4,6 +4,8 @@ import {movePointRight, parseAddOrderArgs} from "./util.js";
 import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
 import {smartContractWalletAddress} from "./lib/constant.js";
 
+export {cancelOrder} from './lib/providers.js'
+
 /* ethers.org使用手册：Contract对象
 调用某个智能合约，直接用address和abi构造Contractd对象。 这个对象的特性，请参考：
 https://docs.ethers.org/v5/single-page/#/v5/api/contract/contract/-%23-Contract--metaclass
@@ -57,7 +59,7 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
             slippage = 0.005
         }
         let priceAdjusted = orderType === 'buy' ? price * (1 + slippage) : price * (1 - slippage)
-        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, priceAdjusted, volume);
+        const [tokenIn, tokenOut, amountIn, amountOut] = parseAddOrderArgs(coinPair, orderType, price, volume);
         let trade = await createTrade(provider, tokenIn, tokenOut, amountIn, amountOut, poolFee, slippage)
         return await executeTrade(trade, slippage, maxWaitSeconds, gasPriceGwei + '', useSmartContractWallet ? smartContractWalletAddress : wallet.address)
     } catch (e) {
@@ -65,6 +67,7 @@ export async function addOrder(coinPair, orderType, price, volume, maxWaitSecond
         throw e
     }
 }
+
 
 /**
  * 1inch聚合交易。AggregationRouterV5合约arb地址：0x1111111254eeb25477b68fb85ed929f73a960582

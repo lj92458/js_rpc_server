@@ -58,7 +58,7 @@ async function approval(symbol1, symbol2, spenderAddress = SWAP_ROUTER_ADDRESS) 
 async function testSendToken() {
     let result = await sendToken(
         "eth",
-        "0x0e7a26909abecd20de80f849b41d692d40abe773",
+        "0x59f662CF5ec57E1503c2eDEa084797428BBe00FF",
         0.001,
         true,
         20,
@@ -113,7 +113,7 @@ async function uniswapAddOrder() {
         await addOrder('weth-usdc',
             'sell',
             book.bids[0][0],
-            0.01,
+            1,
             120,
             Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.001,
@@ -205,17 +205,18 @@ async function wethWrap(isWrap, amount, tokenAddress) {
 async function testHelpSendToken(symbol, amount) {
     let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
     let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
-    await helpSendToken(null, '0x0e7a26909abecd20de80f849b41d692d40abe773', amount, 18, 30, 0.1)
+    await helpSendToken(null, '0x59f662CF5ec57E1503c2eDEa084797428BBe00FF', amount, 18, 30, 0.2)
 }
 
 //createWallet('','')
-//await approval('weth', 'usdc', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-//await uniswapBook()
-await moreUniswapBook()
+//await approval('weth', 'usdt', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+await uniswapBook()
+//await moreUniswapBook()
 //await testSendToken().then()
 //await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()
-//await wethWrap(true, 12.394843, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
-//await testHelpSendToken('weth', 0.103749)
+//await wethWrap(true, 1.2891094, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
+//await testHelpSendToken('eth', 1)
+//await uniswapAddOrder()
