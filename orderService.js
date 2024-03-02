@@ -168,5 +168,13 @@ async function getTx(coinPair, orderType, price, volume, slippage) {
     return response.data.tx
 }
 
+/**
+ * 通过调用Trade.createUncheckedTrade来对无tickDataProvider的池子进行线上预执行，试图发现套利机会
+ * @return {Promise<void>}
+ */
+export async function autoTradeNoTicks() {
+
+}
+
 
 

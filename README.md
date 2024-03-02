@@ -97,8 +97,11 @@
    d.移除流动性，tick 是价格上限，liquidityNet 增加 l
 
 8. 虽然QuoterV2调用了revert()函数能取消调用，并且退还 Gas 费，那也只是退还剩余部分，已被计算花销了的Gas并不会退还，那客户端不是还是要为了抓取一个汇率而付费吗？
-   其实，在客户端（如 ethers）中，会使用 contract.staticCall(…) 的方式，让节点以“假装”不会有状态变化的方式来尝试调用一个 public 函数，来达到没有 Gas 花费而又抓取了汇率的效果。假设baseContractMethod就是你想调用的方法.
-   因此，预计算可以白嫖算力。参考https://davidc.ai  QuoterV2不是view类型也不是pure类型。之所以能免费，就是因为contract.staticCall实现了预计算(原理是通过调用provider.call)。
+   其实，在客户端（如 ethers）中，会使用 contract.callStatic(…) 的方式，让节点以“假装”不会有状态变化的方式来尝试调用一个
+   public 函数，来达到没有 Gas 花费而又抓取了汇率的效果。假设baseContractMethod就是你想调用的方法.
+   因此，预计算可以白嫖算力。参考https://davidc.ai
+   QuoterV2不是view类型也不是pure类型。之所以能免费，就是因为contract.callStatic实现了预计算(原理是通过调用provider.call)
+   。注意不要跟solidity语言中的staticcall函数混淆
 9. 【sqrtRatioX96】也叫sqrtPriceX96，计算公式是 sqrt(token1Amount/token0Amount).这里token1Amount的单位是聪或伟。也就是：token0价格的平方根，用Q64.96格式表达。构建一个pool对象时，需要传入这个值。很明显把token0当成了goods，token1当成了money.
    【sqrtPriceLimitX96】是能够承受的价格上限（或下限），格式为Q64.96 调用swap函数时需要传入.
    【Q64.96】是一种Q number format(Q notation、Q格式、Q表示法、定点数格式)。它区别于浮点数表示法。

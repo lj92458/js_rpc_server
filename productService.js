@@ -1,26 +1,27 @@
-import {asksCache, bidsCache, getPool} from './lib/pool.js'
+import {poolMap, getPool} from './lib/pool.js'
 import assert from 'assert'
 import {Big, movePointRight, parseBookArgs} from './util.js'
 
 import {BigNumber, Contract, utils} from 'ethers'
 import {hasUniswap, myAxios, nativeToken, oneInchConf, provider, tokens} from './config.js'
 import oneInchOracleAbi from './lib/oneInchOracleAbi.json' assert {type: 'json'}
+import {Pool} from "@uniswap/v3-sdk";
+import {uniswapV3Factory} from "./lib/constant.js";
 
 /**
  * 查询某个交易对的市场挂单。耗时4到7秒
  * 注意：涉及到 x * y=k, x * sqrt(PriceX) =L, pool.liquidity, pool.sqrtRatioX96这些内容的，数据单位一律是聪、伟这些最小单位。
  * 如何从tehGraph获取多个tick？ https://github.com/Uniswap/v3-sdk/issues/72
  * @param coinPair {string} 交易对goods-money，例如：eth-usdc
- * @param marketOrderSize{Number} 返回的订单数量
- * @param orderStepRatio {Number} 一串小数。两个相邻的挂单之间价格差距比例是多少？建议为价格的万分之一/万分之二，但是uniswap要求必须大于手续费(手续费是万五，或万三十)
  * @param poolFee {Number} 手续费。 500表示百万分之500，也就是0.0005，也就是0.05%
  * @return 复杂对象： {ask:[[price:string,volume:string]],bid:[[price:string,volume:string]]}
  */
-export async function bookProduct(coinPair, marketOrderSize, orderStepRatio, poolFee) {
+export async function bookProduct(coinPair, poolFee) {
     const [goodsToken, moneyToken] = parseBookArgs(coinPair)
-    let pool = await getPool(provider, goodsToken, moneyToken, poolFee, marketOrderSize, orderStepRatio)
+    let poolAddress = Pool.getAddress(goodsToken, moneyToken, poolFee, null, uniswapV3Factory)
+    await getPool(goodsToken, moneyToken, poolFee)
 
-    return {asks: asksCache, bids: bidsCache}
+    return {asks: poolMap[poolAddress].asks, bids: poolMap[poolAddress].bids}
 }
 
 
@@ -41,23 +42,23 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
             return [Number(gasPriceGwei).toFixed(2), 1]
 
         } else {
-            let price, gasPriceGwei
+            let ethPrice, gasPriceGwei
             const [goods, money] = ['w' + nativeToken, moneySymbol]
             let [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
             assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
             if (hasUniswap) {
                 console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
-                const [pool, gasPrice] = await Promise.all([getPool(provider, goodsToken, moneyToken, poolFee), provider.getGasPrice()])
-                price = pool.priceOf(goodsToken).toFixed(9)
+                const [pool, gasPrice] = await Promise.all([getPool(goodsToken, moneyToken, poolFee), provider.getGasPrice()])
+                ethPrice = pool.priceOf(goodsToken).toFixed(9)
                 gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
             } else {//没有uniswap，那么就从1inch的spot-price-aggregator预言机获取eth的价格了
                 console.log(new Date().toLocaleString() + `: call 1inch oracle & getGasPrice 2 times`)
                 let oneInchOracle = new Contract(oneInchConf.oracle, oneInchOracleAbi, provider)
                 const [bigNumberPrice, gasPrice] = await Promise.all([oneInchOracle.getRate(goodsToken.address, moneyToken.address, false), provider.getGasPrice()])
-                price = BigNumber.from(bigNumberPrice).div(10 ** moneyToken.decimals).toString()
+                ethPrice = BigNumber.from(bigNumberPrice).div(10 ** moneyToken.decimals).toString()
                 gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
             }
-            return [Number(gasPriceGwei).toFixed(2), price]
+            return [Number(gasPriceGwei).toFixed(2), ethPrice]
 
         }
     } catch (e) {

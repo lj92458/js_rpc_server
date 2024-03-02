@@ -1,30 +1,12 @@
 import {Big} from './util.js'
+import JSBI from "jsbi";
 
-function apr(feeArr, tvl) {//fee和tvl的单位都是K
-    let result = ''
-    for (let fee of feeArr) {
-        result += Math.round(fee * 365 / tvl * 100) + '\n'
-    }
-    console.log(result)
-}
+let i = 0, n = 3, infoArr = [1, 2, 3, 4, 5, 6, 7];
+for (; i < Math.floor(infoArr.length / n); i++) console.log(infoArr.slice(i * n, (i + 1) * n));
+if (infoArr.length % n > 0) console.log(infoArr.slice(i * n));
 
-apr([45.23, 95.28, 84.82
+let a = JSBI.GE(JSBI.BigInt('10'), '11')
+console.log(a)
 
-    ],
-    50830)
-
-
-function test1(f, t) {
-    console.log(1 / (1 - f - t) - 1 / (1 - f))
-}
-
-test1(0.0001, 0.003)
-test1(0.0005, 0.003)
-test1(0.003, 0.003)
-test1(0.01, 0.003)
-console.log('-------------------')
-test1(0.0005, 0.001)
-test1(0.0005, 0.003)
-test1(0.0005, 0.005)
-test1(0.0005, 0.010)
-console.log(Big('1').toFixed(6))
+let arr = [1, 3, 2];
+console.log(arr.sort((o1, o2) => o1 - o2))

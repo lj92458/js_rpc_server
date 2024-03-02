@@ -6,7 +6,7 @@ import {
     maxNativeToken,
     minNativeToken,
     nativeToken,
-    provider,
+    provider, smartContractWallet,
     supportWeth10,
     tokens,
     useSmartContractWallet,
@@ -71,11 +71,11 @@ export async function queryTokenBalance(ethAddress, symbolArr) {
 export async function sendToken(symbol, address, amount, needWrap, maxWaitSeconds, gasPriceGwei) {
     assert(whiteList.includes(address.toLowerCase()), '地址没在whiteList: ' + address)
     await checkNativeToken(minNativeToken, maxNativeToken, maxWaitSeconds, gasPriceGwei)
-    let amountInBaseUnit = movePointRight(amount, tokenObj.decimals)
     console.log('sendToken: ' + JSON.stringify(arguments))
     symbol = symbol.toLowerCase()
     let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
     assert(tokenObj, "token 不存在：" + symbol)
+    let amountInBaseUnit = movePointRight(amount, tokenObj.decimals)
     let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
     let contractWeth10 = new Contract(tokenObj.address, weth10ABI.abi, provider)
     let contractWeth9 = new Contract(tokenObj.address, weth9ABI.abi, provider)
@@ -158,14 +158,14 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
     assert(tokenObj, "token 不存在：" + symbol)
     try {
         let transactionReceipt = await provider.waitForTransaction(txId, confirmNum, maxWaitSeconds)
-        let confirmNumResult = transactionReceipt?.confirmations ?? 0
+        //let confirmNumResult = transactionReceipt?.confirmations ?? 0
         if (needWrap && transactionReceipt?.transactionHash) {//如果需要转换
             let contractWeth9 = new Contract(tokenObj.address, weth9ABI.abi, provider)
             if (symbol === nativeToken) {//eth转成weth(调用deposit)
                 const transaction = await contractWeth9.populateTransaction.deposit()
                 await sendTransactionByWallet({...fillTranRequest(transaction, null, null, movePointRight(amount, tokenObj.decimals)),}, maxWaitSeconds, gasPriceGwei)
-            } else if (symbol === 'w' + nativeToken) {//weth转成eth(调用widthdraw)
-                const transaction = await contractWeth9.populateTransaction.widthdraw(movePointRight(amount, tokenObj.decimals));
+            } else if (symbol === 'w' + nativeToken) {//weth转成eth(调用withdraw)
+                const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(amount, tokenObj.decimals));
                 await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei);
             }
         }
@@ -181,15 +181,21 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
  * @return {Promise<void>}
  */
 async function checkNativeToken(minAmount, maxAmount, maxWaitSeconds, gasPriceGwei) {
-    let ethBalance = utils.formatEther(await provider.getBalance(useSmartContractWallet ? smartContractWalletAddress : wallet.address))
+    let ethBalance = utils.formatEther(await provider.getBalance(wallet.address))//gas fee总是从eoa账户扣的，不可能从智能合约钱包中扣
     console.log('当前eth余额' + ethBalance)
     if (ethBalance < minAmount) {
         console.log('eth数量小于' + minAmount + ', 开始从weth转入' + maxAmount)
         let weth = tokens['w' + nativeToken]
         let contractWeth9 = new Contract(weth.address, weth9ABI.abi, provider)
-        const transaction = await contractWeth9.populateTransaction.widthdraw(movePointRight(maxAmount, weth.decimals));
+        const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(maxAmount, weth.decimals));
         await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei);
-        console.log('成功widthdraw ' + maxAmount + ' weth')
+        console.log('成功withdraw ' + maxAmount + ' weth')
+        //如果用了智能合约钱包，那么要把gas fee转入eoa钱包,因为gas fee总是从eoa账户扣的，不可能从智能合约钱包中扣
+        if (useSmartContractWallet) {
+            let tran = smartContractWallet.populateTransaction.ethTransfer(wallet.address, movePointRight(maxAmount, weth.decimals))
+            await sendTransactionByWallet({...fillTranRequest(tran),}, maxWaitSeconds, gasPriceGwei);
+
+        }
     }
 }
 

@@ -154,7 +154,7 @@ export function sleep(ms) {
 /**
  * 为其他函数准备参数
  * @param coinPair {string} 交易对goods-money，例如：eth-usdc
- * @return {(Token|CurrencyAmount<Token>)[]}
+ * @return {Token[]}
  */
 export function parseBookArgs(coinPair) {
     const [goods, money] = coinPair.toLowerCase().split("-")

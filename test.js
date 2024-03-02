@@ -79,17 +79,25 @@ async function testReceiveToken() {
 }
 
 async function uniswapBook() {
-    let balanceArr = await queryTokenBalance(smartContractWalletAddress, ['weth', 'usdc'])
+    let fee = 500
+    let goods = 'eth'
+    let money = 'usdt'
+
+    let balanceArr = await queryTokenBalance(smartContractWalletAddress, [goods, money])
     console.log(balanceArr)
-    let gasQueryArr = await getGasPriceGweiAndEthPrice('usdc', 500)
+    let gasQueryArr = await getGasPriceGweiAndEthPrice(money, 500)
     console.log(gasQueryArr)
+
+    await bookProduct('eth-usdc', 500)
+
+
     let begin = new Date().getTime()
-    let book = await bookProduct('weth-usdc', 100, 0.0007, 500)
+    let book = await bookProduct(goods + '-' + money, fee)
     console.log(`uniswapBook耗时${new Date().getTime() - begin}毫秒`)
     console.log(JSON.stringify(book.asks))
     console.log("=======================")
     console.log(JSON.stringify(book.bids) + '\n')
-    return book
+
 }
 
 async function moreUniswapBook() {
@@ -196,8 +204,8 @@ async function wethWrap(isWrap, amount, tokenAddress) {
     if (isWrap) {//eth转weth(调用deposit)
         const transaction = await contractWeth9.populateTransaction.deposit()
         await sendTransactionByWallet({...fillTranRequest(transaction, null, null, movePointRight(amount, 18)),}, 30, 0.1)
-    } else {//weth转成eth(调用widthdraw)
-        const transaction = await contractWeth9.populateTransaction.widthdraw(movePointRight(amount, 18));
+    } else {//weth转成eth(调用withdraw)
+        const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(amount, 18));
         await sendTransactionByWallet({...fillTranRequest(transaction),}, 30, 0.1);
     }
 }

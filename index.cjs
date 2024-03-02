@@ -90,8 +90,14 @@ function startRpcServer() {
  * SupportedChainId.CELO = 42220,
  * SupportedChainId.CELO_ALFAJORES = 44787,
  */
-init().then(value => startRpcServer())
-logProcessEvent()
+init().then(value => {
+    logProcessEvent()
+    startRpcServer()
+    //开启自动套利
+    orderService.autoTradeNoTicks()
+
+})
+
 
 
 
