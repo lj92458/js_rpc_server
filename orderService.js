@@ -3,6 +3,7 @@ import {createTrade, executeTrade} from './lib/trade.js'
 import {movePointRight, parseAddOrderArgs} from "./util.js";
 import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
 import {smartContractWalletAddress} from "./lib/constant.js";
+import {initPools, poolMap} from "./lib/pool.js";
 
 export {cancelOrder} from './lib/providers.js'
 
@@ -172,8 +173,10 @@ async function getTx(coinPair, orderType, price, volume, slippage) {
  * 通过调用Trade.createUncheckedTrade来对无tickDataProvider的池子进行线上预执行，试图发现套利机会
  * @return {Promise<void>}
  */
-export async function autoTradeNoTicks() {
-
+export async function autoTrade() {
+    if (Object.keys(poolMap).length === 0) {
+        await initPools()
+    }
 }
 
 

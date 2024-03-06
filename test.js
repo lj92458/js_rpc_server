@@ -1,24 +1,18 @@
 //keystore相关知识：https://www.jianshu.com/p/bc9ea0dc74ed
 import SwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json' assert {type: 'json'}
-import ISwapRouterAbi
-    from '@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json' assert {type: 'json'}
 import ethers, {Contract, utils} from 'ethers'
-import {queryTokenBalance, sendToken, receiveToken, helpSendToken} from './accountService.js'
-import {bookProduct, getGasPriceGweiAndEthPrice, bookProductOneInch} from './productService.js'
+import {helpSendToken, queryTokenBalance, receiveToken, sendToken} from './accountService.js'
+import {bookProduct, bookProductOneInch, getGasPriceGweiAndEthPrice} from './productService.js'
 import {addOrder, addOrderOneInch} from './orderService.js'
-import {chainId, nativeToken, provider, tokens, wallet} from "./config.js";
-import {Pool,} from '@uniswap/v3-sdk'
-import {
-    AggregationRouterV5, IERC20,
-    smartContractWalletAddress,
-    SWAP_ROUTER_ADDRESS,
-    uniswapV3Factory, weth9ABI
-} from "./lib/constant.js";
+import {provider, tokens} from "./config.js";
+import {autoTradeInSymbol, IERC20, smartContractWalletAddress, SWAP_ROUTER_ADDRESS, weth9ABI} from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
-import {getActiveOrders, getOrderBookFusion, addOrderFusion} from "./lib/oneInchFusion.js";
-import {movePointRight, Big} from "./util.js";
+import {addOrderFusion, getActiveOrders, getOrderBookFusion} from "./lib/oneInchFusion.js";
+import {movePointRight} from "./util.js";
 import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
+import {transRoute} from "./lib/pool.js";
+import {CurrencyAmount} from "@uniswap/sdk-core";
 
 //const config = require('./config')
 //const util = require("./util")
@@ -81,13 +75,13 @@ async function testReceiveToken() {
 async function uniswapBook() {
     let fee = 500
     let goods = 'eth'
-    let money = 'usdt'
-
+    let money = 'usdce'
+    /*
     let balanceArr = await queryTokenBalance(smartContractWalletAddress, [goods, money])
     console.log(balanceArr)
     let gasQueryArr = await getGasPriceGweiAndEthPrice(money, 500)
     console.log(gasQueryArr)
-
+    */
     await bookProduct('eth-usdc', 500)
 
 
@@ -216,6 +210,14 @@ async function testHelpSendToken(symbol, amount) {
     await helpSendToken(null, '0x59f662CF5ec57E1503c2eDEa084797428BBe00FF', amount, 18, 30, 0.2)
 }
 
+async function testTransRoute() {
+    let initInputAmount = CurrencyAmount.fromRawAmount(tokens[autoTradeInSymbol], movePointRight(5000, tokens[autoTradeInSymbol].decimals))
+    let outInputAmount = CurrencyAmount.fromRawAmount(tokens[autoTradeInSymbol], movePointRight(5001, tokens[autoTradeInSymbol].decimals))
+    let quoteResult = await transRoute([6, 9, 0], initInputAmount, outInputAmount, 1, true)
+    console.log(`quoteResult=${quoteResult}`)
+    await transRoute([6, 9, 0], initInputAmount, outInputAmount, 1, false)
+}
+
 //createWallet('','')
 //await approval('weth', 'usdt', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 await uniswapBook()
@@ -228,3 +230,4 @@ await uniswapBook()
 //await wethWrap(true, 1.2891094, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
 //await testHelpSendToken('eth', 1)
 //await uniswapAddOrder()
+//await testTransRoute()

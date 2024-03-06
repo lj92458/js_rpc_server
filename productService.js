@@ -1,4 +1,4 @@
-import {poolMap, getPool} from './lib/pool.js'
+import {createOrderBook, getPool, poolMap} from './lib/pool.js'
 import assert from 'assert'
 import {Big, movePointRight, parseBookArgs} from './util.js'
 
@@ -19,8 +19,12 @@ import {uniswapV3Factory} from "./lib/constant.js";
 export async function bookProduct(coinPair, poolFee) {
     const [goodsToken, moneyToken] = parseBookArgs(coinPair)
     let poolAddress = Pool.getAddress(goodsToken, moneyToken, poolFee, null, uniswapV3Factory)
-    await getPool(goodsToken, moneyToken, poolFee)
-
+    let poolInfo2 = poolMap[poolAddress]
+    assert(poolInfo2)
+    if (!poolInfo2.needOrderBook) {//如果首次开启OrderBook,就需要立刻执行一遍。以后就会自动执行
+        poolInfo2.needOrderBook = true
+        await createOrderBook(poolInfo2.pool, poolInfo2.goodsToken, poolInfo2.moneyToken, poolInfo2.marketOrderSize, poolInfo2.r, poolInfo2.pool.fee)
+    }
     return {asks: poolMap[poolAddress].asks, bids: poolMap[poolAddress].bids}
 }
 

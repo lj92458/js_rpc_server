@@ -94,8 +94,7 @@ init().then(value => {
     logProcessEvent()
     startRpcServer()
     //开启自动套利
-    orderService.autoTradeNoTicks()
-
+    orderService.autoTrade()
 })
 
 

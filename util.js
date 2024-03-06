@@ -147,8 +147,8 @@ export function poolFeeToNumber(poolFee) {
     return Number(movePointLeft(poolFee, 6))
 }
 
-export function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+export async function sleep(ms, result) {
+    return await new Promise(resolve => setTimeout(() => resolve(result), ms));
 }
 
 /**
