@@ -4,7 +4,7 @@ import SwapRouterAbi
 import ethers, {Contract, utils} from 'ethers'
 import {helpSendToken, queryTokenBalance, receiveToken, sendToken} from './accountService.js'
 import {bookProduct, bookProductOneInch, getGasPriceGweiAndEthPrice} from './productService.js'
-import {addOrder, addOrderOneInch} from './orderService.js'
+import {addOrder, addOrderOneInch, autoTrade} from './orderService.js'
 import {provider, tokens} from "./config.js";
 import {autoTradeInSymbol, IERC20, smartContractWalletAddress, SWAP_ROUTER_ADDRESS, weth9ABI} from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
@@ -218,6 +218,8 @@ async function testTransRoute() {
     await transRoute([6, 9, 0], initInputAmount, outInputAmount, 1, false)
 }
 
+
+await autoTrade()
 //createWallet('','')
 //await approval('weth', 'usdt', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
 await uniswapBook()

@@ -20,7 +20,7 @@ export async function bookProduct(coinPair, poolFee) {
     const [goodsToken, moneyToken] = parseBookArgs(coinPair)
     let poolAddress = Pool.getAddress(goodsToken, moneyToken, poolFee, null, uniswapV3Factory)
     let poolInfo2 = poolMap[poolAddress]
-    assert(poolInfo2)
+    assert(poolInfo2, 'poolInfo2为空')
     if (!poolInfo2.needOrderBook) {//如果首次开启OrderBook,就需要立刻执行一遍。以后就会自动执行
         poolInfo2.needOrderBook = true
         await createOrderBook(poolInfo2.pool, poolInfo2.goodsToken, poolInfo2.moneyToken, poolInfo2.marketOrderSize, poolInfo2.r, poolInfo2.pool.fee)
