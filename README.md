@@ -15,9 +15,12 @@
 4. 请确保账户有足够的weth,而不是eth. 如果weth不足，请在etherscan.io调用weth的deposit函数充值。以太链上weth的合约地址是0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 #### 使用说明
 0. 测试某个js文件，用node命令启动。如果比pm2少了一个参数，因此要在js文件后面额外补一个参数???
-1.  启动服务：pm2 start index.cjs --name eth --watch -- mima chainId [LOCAL | MAINNET | WALLET_EXTENSION]
-      以太主网=1，celo=42220 各链网络编号https://chainlist.org/?search=celo
-    结束服务： pm2 stop eth
+1. 启动服务：Linux: a=xxx b=xxx pm2 start index.cjs --name eth --watch -- chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+   windows PowerShell: $env:a="xxx";$env:b="xxx"; pm2 start index.cjs --name arb --watch -- 42161 MAINNET
+   windows CMD: set a=xxx& set b=xxx& pm2 start index.cjs --name arb --watch -- 42161 MAINNET
+   chainId [LOCAL | MAINNET | WALLET_EXTENSION]
+   以太主网=1，celo=42220 各链网络编号https://chainid.network 或https://github.com/ethereum-lists/chains
+   结束服务： pm2 stop eth
 2. 考虑两种策略：
    1.冒进型，跟别人激烈争抢，尽量设大滑点，然后两个平台同时提交。这个亏起来很厉害的。
    2.保守型，设置很小的滑点，让dex先成交，如果成交失败，cex就不用执行了，也就没什么损失。这个不容易亏，但是也不容易抓住机会。
@@ -40,11 +43,17 @@
 * @uniswap/sdk-core 对其它sdk数据结构的抽象，用于多个sdk之间共享数据结构、互相传递数据。各sdk都会依赖这个包。
                       参考 https://docs.uniswap.org/sdk/core/reference/overview
 1. 各种合约、代币的地址 https://docs.uniswap.org/contracts/v3/reference/deployments
-2. uniswap v3创建了新的常量：Ether, 代表以太币。追溯它的继承关系：Ether->NativeCurrency->BaseCurrency. 调用它的wrapped属性，可以得到weth
-   这使得eth具有和weth同等的地位，凡是能传入weth的地方，都能传入Ether(为了统一，不论传入的是什么，都应该调用一下wrapped属性). 创建对象：Ether.onChain(ChainId), 支持各种以太系的区块链【WMATIC代表MATIC. 但是不支持celo.】
+2. uniswap v3创建了新的常量：Ether, 代表以太币。追溯它的继承关系：Ether->NativeCurrency->BaseCurrency.
+   调用它的wrapped属性，可以得到weth
+   这使得eth具有和weth同等的地位，凡是能传入weth的地方，都能传入Ether(为了统一，不论传入的是什么，都应该调用一下wrapped属性)
+   . 创建对象：Ether.onChain(ChainId), 支持各种以太系的区块链【WMATIC代表MATIC. 但是不支持celo.】
 
-3. tick是最小报价单位(可以是负数，表示价格在0~1之间)，假设tick=i,则1.0001的i次方就代表它所要表达的价格(用聪、wei等最小货币单位计量的价格)。TICK_SPACING翻译成“报价间距”，代表两个相邻报价之间间隔了多少个tick(或者说把这些tick分成小组，每组多少个tick; pool.tickBitmap和pool.ticks只存储每组第一个tick的状态)。
-   报价间距的大小，仅仅影响流动性提供者的体验(价格范围精确到多少)、交易者的gas消耗量、手续费费率。TICK_SPACINGS的定义是{[amount in FeeAmount]: number;}，具体映射如下：
+3. tick是最小报价单位(可以是负数，表示价格在0~1之间)，假设tick=i,则1.0001的i次方就代表它所要表达的价格(
+   用聪、wei等最小货币单位计量的价格)。TICK_SPACING翻译成“报价间距”，代表两个相邻报价之间间隔了多少个tick(或者说把这些tick分成小组，
+   每组多少个tick; pool.tickBitmap和pool.ticks只存储每组第一个tick的状态)
+   。共有65536个tickBitmap，每个有256个比特位，也就是总共存储了16,777,216个有效tick.
+   报价间距的大小，仅仅影响流动性提供者的体验(价格范围精确到多少)
+   、交易者的gas消耗量、手续费费率。TICK_SPACINGS的定义是{[amount in FeeAmount]: number;}，具体映射如下：
    FeeAmount.LOWEST=100，对应着间距1, //手续费0.01%，最小能允许你设置0.01%的做市范围(btc价格2万, 0.01%就是2)
    FeeAmount.LOW=500，对应着间距10, //手续费0.05%，最小能允许你设置0.1%的做市范围(btc价格2万, 0.1%就是20)
    FeeAmount.MEDIUM=3000，对应着间距60, //手续费0.3%，最小能允许你设置0.6%的做市范围(btc价格2, 0.6%就是120)
@@ -53,7 +62,8 @@
    答案是：不能。【例1】为了简化问题，我们假设某用户资金量是10，他设定了positon的价格区间是1到10，市场价刚好在1到10之间反复波动，他的资金平分成10份。当价格降到10，他花一元钱购买0.1个，当降到9，他又花一元钱购买1.111个，降到8，他再花一元钱
    购买0.125个......降到2他再花一元钱购买0.5个，降到1他再花1元购买1个。到此为止，他的10元钱均匀的撒在每个价位，只是每次交易得到的币越来越多。接下来价格开始上涨，涨到1，他卖出1个得到1元，涨到2，他卖出0.5个得到1元，涨到3他再卖出0.333个得到1元......一直涨到10，他卖出0.1个得到1元。
    到此为止，他在每个价位得到了一元钱，只是每得到一元钱，需要付出的币越来越少。10次买入，和10次卖出是互相抵消的，这一圈走下来，他没赚也没亏：币耗尽了，10元钱又回到了手中。
-   这跟量化交易中的网格算法有什么区别呢，为什么网格算法这样来回收割，就能赚到钱？区别就是：买入时，要用全部资金买入(在最低价抄底)，而不是把资金平分成几份、越跌越买。卖出时也要卖出全部的币(在最高点逃顶)，而不是分批次卖出、越涨越卖。
+   这跟量化交易中的网格算法有什么区别呢，为什么网格算法这样来回收割，就能赚到钱？区别就是：买入时，要用全部资金买入(
+   在最低价抄底)，而不是把资金平分成几份、越跌越买。卖出时也要卖出全部的币(在最高点逃顶)，而不是分批次卖出、越涨越卖。
    【例2】更简化的例子：假设你有2元钱，价格在1到2之间波动，当价格是1时，你就用2元钱买入2个币(而不是只用一半的钱), 当价格是2时，你就卖出2个币得到4元(于是你就赚了2元)，或者你只卖出1个币也行(那就是回本且赚了一个币)。
    【例3】网格算法更具体的情形：当前市场价1.5，眼看着价格从1.5往下降，越来越低，这时要忍住，不要急于抄底，而是要坚信价格会降到1. 等真的降到1了你就买入了。然后价格涨到1.1了，你要忍住别卖，坚信价格会涨到2. 
    等涨到1.5了还是不卖，等真的涨到2了你就卖。这样就赚到差价了。而不是在价格1.1卖一部分，1.2卖一部分，1.3卖一部分... 因此网格的买单和卖单总是成双成对，你在价格下跌了0.5时买入，也应该等价格涨了0.5再卖(也就是从1.5涨到2)
@@ -65,25 +75,33 @@
 5. 已知tick编号是i,怎么知道它代表的价格(一聪btc等价于多少伟eth)？ price(i) = 1.0001的i次方，也就是说相邻tick之间的价格差距是0.01%. tick是用int24表达的，所以最多有2的24次方个tick,也就是1677万个(正负838万)，能表达无穷大的数据。
    实际上程序硬性规定了tick范围是正负88万： -887272 ~ 887272
 6. QuoterV2合约，是为了预计算。不是在链上执行的，因此不会消耗gas. 调用方式为provider.call(而不是wallet.sendTransaction),用call函数调用任何合约，一律不消耗gas
-7. QuoterV2跟Pool.getOutputAmount区别是什么？ 
-   答：uniswap v3的精髓就在于众多的tick，每次创建positon、修改position，都会修改两个tick。要想得到准确的输入输出，必须访问真实的tick数据。 给定输入，以上两种方法都能计算输出，二者都会访问实时的链上tick数据。
-   前者代码全部在Provider上执行(免费)，后者在需要访问tick数据时，才会去查询tickDataProvider(前提是构造pool时传入了tickDataProvider。而tickDataProvider的构造，
-   依赖于TickLens.getPopulatedTicksInWord(poolAddress, tickBitmapIndex)，它能一次查出一字节的tick来(倒序排列)，也就是256个。字节编号最多有65535个).TickListDataProvider.getTick()会用二分查找法找到小端最接近的tick.
+7. QuoterV2跟Pool.getOutputAmount区别是什么？
+   答：uniswap v3的精髓就在于众多的tick，每次创建positon、修改position，都会修改两个tick。要想得到准确的输入输出，必须访问真实的tick数据。
+   给定输入，以上两种方法都能计算输出，二者都会访问实时的链上tick数据。
+   前者代码全部在Provider上执行(免费)，后者在需要访问tick数据时，才会去查询tickDataProvider(
+   前提是构造pool时传入了tickDataProvider。而tickDataProvider的构造，
+   依赖于TickLens.getPopulatedTicksInWord(poolAddress, tickBitmapIndex)，它能一次查出一字节的tick来(倒序排列)
+   ，也就是256个。字节编号最多有65536个).TickListDataProvider.getTick()会用二分查找法找到小端最接近的tick.
    UniswapV3Pool.sol里面定义了变量：ticks、tickBitmap、positions，用来保存所有的position、有效的tick。
-   mint函数负责创建position, burn函数负责销毁position，二者都会调用_modifyPosition和_updatePosition，进而调用ticks.update来更新该position起止位置的两个tick的属性：liquidityNet和liquidityGross.
+   mint函数负责创建position,
+   burn函数负责销毁position，二者都会调用_modifyPosition和_updatePosition，进而调用ticks.update来更新该position起止位置的两个tick的属性：liquidityNet和liquidityGross.
    每当有流动性将该tick设为价格上限或下限，tick.liquidityGross都会增加，因此它表示全部流动性(包括了激活的和没激活的)。
-   pool维护了【全局变量liquidity】，表示整个池子目前被激活了的流动性。swap函数为了耗尽inAmount,会用while循环依次访问每个有效tick(从当前这个有效或无效tick穿越到下一个有效tick), 
+   pool维护了【全局变量liquidity】，表示整个池子目前被激活了的流动性。swap函数为了耗尽inAmount,会用while循环依次访问每个有效tick(
+   从当前这个有效或无效tick穿越到下一个有效tick),
    给liquidity加上tick.liquidityNet(有正有负,导致liquidity变大或变小), 并且利用liquidity计算出该tick对应的inAmount、outAmount。
-   
+
    在注入或移除数量为 l 的流动性时，具体规则如下： (参考https://learnblockchain.cn/article/3055)
-      a.注入流动性，tick 是价格下限，liquidityNet 增加 l
-      b.注入流动性，tick 是价格上限，liquidityNet 减少 l
-      c.移除流动性，tick 是价格下限，liquidityNet 减少 l
-      d.移除流动性，tick 是价格上限，liquidityNet 增加 l
+   a.注入流动性，tick 是价格下限，liquidityNet 增加 l
+   b.注入流动性，tick 是价格上限，liquidityNet 减少 l
+   c.移除流动性，tick 是价格下限，liquidityNet 减少 l
+   d.移除流动性，tick 是价格上限，liquidityNet 增加 l
 
 8. 虽然QuoterV2调用了revert()函数能取消调用，并且退还 Gas 费，那也只是退还剩余部分，已被计算花销了的Gas并不会退还，那客户端不是还是要为了抓取一个汇率而付费吗？
-   其实，在客户端（如 ethers）中，会使用 contract.staticCall(…) 的方式，让节点以“假装”不会有状态变化的方式来尝试调用一个 public 函数，来达到没有 Gas 花费而又抓取了汇率的效果。假设baseContractMethod就是你想调用的方法.
-   因此，预计算可以白嫖算力。参考https://davidc.ai  QuoterV2不是view类型也不是pure类型。之所以能免费，就是因为contract.staticCall实现了预计算(原理是通过调用provider.call)。
+   其实，在客户端（如 ethers）中，会使用 contract.callStatic(…) 的方式，让节点以“假装”不会有状态变化的方式来尝试调用一个
+   public 函数，来达到没有 Gas 花费而又抓取了汇率的效果。假设baseContractMethod就是你想调用的方法.
+   因此，预计算可以白嫖算力。参考https://davidc.ai
+   QuoterV2不是view类型也不是pure类型。之所以能免费，就是因为contract.callStatic实现了预计算(原理是通过调用provider.call)
+   。注意不要跟solidity语言中的staticcall函数混淆
 9. 【sqrtRatioX96】也叫sqrtPriceX96，计算公式是 sqrt(token1Amount/token0Amount).这里token1Amount的单位是聪或伟。也就是：token0价格的平方根，用Q64.96格式表达。构建一个pool对象时，需要传入这个值。很明显把token0当成了goods，token1当成了money.
    【sqrtPriceLimitX96】是能够承受的价格上限（或下限），格式为Q64.96 调用swap函数时需要传入.
    【Q64.96】是一种Q number format(Q notation、Q格式、Q表示法、定点数格式)。它区别于浮点数表示法。

@@ -4,6 +4,7 @@ import toFormat from 'toformat'
 import JSBI from 'jsbi'
 
 import {Percent} from '@uniswap/sdk-core'
+import {tokens} from "./config.js";
 
 export const Big = toFormat(_Big)
 
@@ -144,4 +145,37 @@ export function getTokenAmount(liquidity, sqrtPriceX96, isToken0Amount) {
  */
 export function poolFeeToNumber(poolFee) {
     return Number(movePointLeft(poolFee, 6))
+}
+
+export async function sleep(ms, result) {
+    return await new Promise(resolve => setTimeout(() => resolve(result), ms));
+}
+
+/**
+ * 为其他函数准备参数
+ * @param coinPair {string} 交易对goods-money，例如：eth-usdc
+ * @return {Token[]}
+ */
+export function parseBookArgs(coinPair) {
+    const [goods, money] = coinPair.toLowerCase().split("-")
+    const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
+    assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+    return [goodsToken, moneyToken]
+}
+
+/**
+ * 为其他函数准备参数
+ * @param coinPair {string} 格式：goods-money
+ * @param orderType {string} 取值：buy,sell
+ * @param price {Number}
+ * @param volume {Number}
+ * @return {(Token|CurrencyAmount<Token>|*|number)[]}
+ */
+export function parseAddOrderArgs(coinPair, orderType, price, volume) {
+    const [goods, money] = coinPair.toLowerCase().split("-")
+    const [goodsToken, moneyToken] = [tokens[goods].wrapped, tokens[money].wrapped]
+    assert(goodsToken && moneyToken, "token 不存在：" + [goods, money])
+    const [tokenIn, tokenOut] = orderType === "buy" ? [moneyToken, goodsToken] : [goodsToken, moneyToken]
+    const [amountIn, amountOut] = orderType === "buy" ? [price * volume, volume] : [volume, price * volume]
+    return [tokenIn, tokenOut, amountIn, amountOut]
 }

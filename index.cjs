@@ -64,9 +64,15 @@ function startRpcServer() {
     try {
         const server = hprose.Server.create(config.serverUri)
         server.addFunction(accountService.queryTokenBalance,)
+        server.addFunction(accountService.sendToken,)
+        server.addFunction(accountService.receiveToken,)
         server.addFunction(productService.bookProduct)
         server.addFunction(productService.getGasPriceGweiAndEthPrice)
+        server.addFunction(productService.bookProductOneInch)
         server.addFunction(orderService.addOrder)
+        server.addFunction(orderService.addOrderOneInch)
+        server.addFunction(orderService.addTwoOrderOneInch)
+        server.addFunction(orderService.cancelOrder)
         //server.addFunction(LpProfit.queryPairState)
         server.addFunction(config.getProp)
         server.addFunction(config.getConfig)
@@ -84,8 +90,13 @@ function startRpcServer() {
  * SupportedChainId.CELO = 42220,
  * SupportedChainId.CELO_ALFAJORES = 44787,
  */
-init().then(value => startRpcServer())
-logProcessEvent()
+init().then(value => {
+    logProcessEvent()
+    startRpcServer()
+    //开启自动套利
+    orderService.autoTrade()
+})
+
 
 
 

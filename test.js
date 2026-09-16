@@ -1,25 +1,27 @@
 //keystore相关知识：https://www.jianshu.com/p/bc9ea0dc74ed
 import SwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json' assert {type: 'json'}
-import ISwapRouterAbi
-    from '@uniswap/v3-periphery/artifacts/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json' assert {type: 'json'}
-import ethers, {utils} from 'ethers'
-import {queryTokenBalance} from './accountService.js'
-import {bookProduct, getGasPriceGweiAndEthPrice} from './productService.js'
-import {addOrder} from './orderService.js'
+import {Contract, formatUnits, Interface, Wallet,} from 'ethers'
+import {helpSendToken, queryTokenBalance, receiveToken, sendToken} from './accountService.js'
+import {bookProduct, bookProductOneInch, getGasPriceGweiAndEthPrice} from './productService.js'
+import {addOrder, addOrderOneInch, autoTrade} from './orderService.js'
 import {provider, tokens} from "./config.js";
-import {Pool,} from '@uniswap/v3-sdk'
-import {uniswapV3Factory} from "./lib/constant.js";
+import {autoTradeInSymbol, IERC20, smartContractWalletAddress, SWAP_ROUTER_ADDRESS, weth9ABI} from "./lib/constant.js";
 import {getTokenTransferApproval} from "./lib/trade.js";
+import {addOrderFusion, getActiveOrders, getOrderBookFusion} from "./lib/oneInchFusion.js";
+import {movePointRight} from "./util.js";
+import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
+import {transRoute} from "./lib/pool.js";
+import {CurrencyAmount} from "@uniswap/sdk-core";
 
 //const config = require('./config')
 //const util = require("./util")
 //const https = require('https')
-
-// const myWallet= ethers.Wallet.fromMnemonic("")
-//
-//  console.log(myWallet.address)
-// myWallet.encrypt("").then(r => console.log("JsonWallet:"+r))
+function createWallet(word, p) {
+    const myWallet = Wallet.fromMnemonic(word)
+    console.log(myWallet.address)
+    myWallet.encrypt(p).then(r => console.log(r))
+}
 
 
 //https://api.etherscan.io/api?module=transaction&action=getstatus&txhash=0x3b4cd40bc15ccee3f166ea92665c1992d631cc4555956bb946843bb5c9ee19cc&apikey=YourApiKeyToken
@@ -36,41 +38,103 @@ import {getTokenTransferApproval} from "./lib/trade.js";
 // ).on('error', e => console.error(e))
 
 //授权
-async function approval(symbol1, symbol2) {
-    getTokenTransferApproval(tokens[symbol1], 1000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2)).then(obj => console.log(obj))
-    if (symbol2) getTokenTransferApproval(tokens[symbol2], 1000000, 30, 25).then(obj => console.log(obj))
+async function approval(symbol1, symbol2, spenderAddress = SWAP_ROUTER_ADDRESS) {
+    if (symbol1) {
+        let result = await getTokenTransferApproval(tokens[symbol1], 10000000, 120, Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
+        console.log(result)
+    }
+    if (symbol2) {
+        let result = await getTokenTransferApproval(tokens[symbol2], 10000000, 120, Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
+        console.log(result)
+    }
 }
 
-//approval('cusd', ).then()
+async function testSendToken() {
+    let result = await sendToken(
+        "eth",
+        "0x59f662CF5ec57E1503c2eDEa084797428BBe00FF",
+        0.001,
+        true,
+        20,
+        formatUnits(await provider.getGasPrice(), "gwei")
+    )
+    console.log('sendToken: ' + JSON.stringify(result))
+}
 
-async function test1() {
-    let balanceArr = await queryTokenBalance('0x8E24feb043c963BD16e1B503e2b1fe21426221f5', ['eth', 'usdc'])
+async function testReceiveToken() {
+    await receiveToken(
+        "eth",
+        "txId",
+        0.001,
+        true,
+        20,
+        formatUnits(await provider.getGasPrice(), "gwei")
+    )
+}
+
+async function uniswapBook() {
+    let fee = 500
+    let goods = 'eth'
+    let money = 'usdce'
+    /*
+    let balanceArr = await queryTokenBalance(smartContractWalletAddress, [goods, money])
     console.log(balanceArr)
-    let gasQueryArr = await getGasPriceGweiAndEthPrice('usdt', 500)
+    let gasQueryArr = await getGasPriceGweiAndEthPrice(money, 500)
     console.log(gasQueryArr)
+    */
+    await bookProduct('eth-usdc', 500)
+
+
     let begin = new Date().getTime()
-    let {asks, bids} = await bookProduct('eth-usdc', 100, 0.004, 3000)
-    console.log(`bookProduct耗时${new Date().getTime() - begin}毫秒`)
-//console.log(JSON.stringify(asks))
-//console.log("=======================")
-//console.log(JSON.stringify(bids))
+    let book = await bookProduct(goods + '-' + money, fee)
+    console.log(`uniswapBook耗时${new Date().getTime() - begin}毫秒`)
+    console.log(JSON.stringify(book.asks))
+    console.log("=======================")
+    console.log(JSON.stringify(book.bids) + '\n')
+
 }
 
-async function test2() {
-    test1().then(async value => {
-        await addOrder('eth-usdc',
+async function moreUniswapBook() {
+    for (let i = 0; i < 10; i++) {
+        await uniswapBook()
+    }
+}
+
+async function oneInchAggregationBook() {
+    let begin = new Date().getTime()
+    let book = await bookProductOneInch('weth-usdc', 0.001, 10)
+    console.log(`oneInchAggregationBook耗时${new Date().getTime() - begin}毫秒`)
+    console.log(JSON.stringify(book.asks))
+    console.log("=======================")
+    console.log(JSON.stringify(book.bids) + '\n')
+    return book
+}
+
+async function uniswapAddOrder() {
+    uniswapBook().then(async book => {
+        await addOrder('weth-usdc',
             'sell',
-            '1900',
+            book.bids[0][0],
+            1,
+            120,
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            0.001,
+            500);
+        await addOrder('weth-usdc',
+            'buy',
+            book.asks[0][0],
             0.01,
             120,
-            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.001,
             500);
     })
+
 }
 
+
 function test3() {
-    const iface = new ethers.utils.Interface(SwapRouterAbi.abi);
+    const iface = new Interface(SwapRouterAbi.abi);
     let decodedData = iface.parseTransaction({
         data: '0x414bf389000000000000000000000000471ece3750da237f93b8e339c536989b8978a438000000000000000000000000765de816845861e75a25fca122bb6898b8b1282a0000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000b0d1435590b4f14a5f4414f93489945546162ffc00000000000000000000000000000000000000000000000000000000643f82f00000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000008517fab5d6dcf680000000000000000000000000000000000000000000000000000000000000000',
         value: '0x00'
@@ -78,5 +142,98 @@ function test3() {
     console.log(decodedData)
 }
 
-test1().then()
+async function oneInchAggregationAddOrder() {
+    oneInchAggregationBook().then(async book => {
+        await addOrderOneInch('weth-usdc',
+            'sell',
+            book.bids[0][0],
+            0.01,
+            120,
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            0.002);
+        await addOrderOneInch('weth-usdc',
+            'buy',
+            book.asks[0][0],
+            0.01,
+            120,
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            0.002);
+    })
+}
 
+async function oneInchFusionBook() {
+    let orders = await getActiveOrders(1, 10)
+    console.log('oneInchFusion ActiveOrders: ' + JSON.stringify(orders))
+    let book = await getOrderBookFusion('weth-usdc', 0.001, 10)
+    console.log('oneInchFusionBook: ' + JSON.stringify(book) + '\n')
+    return book
+}
+
+async function oneInchFusionAddOrder() {
+    oneInchFusionBook().then(async book => {
+            //sell
+            let addOrderResult = await addOrderFusion('weth-usdc',
+                'sell',
+                book.bids[0][0],
+                0.01,
+                null,
+                null,
+                null)
+            console.log("addOrderFusion sell" + JSON.stringify(addOrderResult))
+            //buy
+            addOrderResult = await addOrderFusion('weth-usdc',
+                'buy',
+                book.asks[0][0],
+                0.01,
+                null,
+                null,
+                null)
+            console.log("addOrderFusion buy" + JSON.stringify(addOrderResult))
+        }
+    )
+}
+
+async function wethWrap(isWrap, amount, tokenAddress) {
+    let contractWeth9 = new Contract(tokenAddress, weth9ABI.abi, provider)
+    if (isWrap) {//eth转weth(调用deposit)
+        const transaction = await contractWeth9.deposit.populateTransaction()
+        await sendTransactionByWallet({...fillTranRequest(transaction, null, null, movePointRight(amount, 18)),}, 30, 0.1)
+    } else {//weth转成eth(调用withdraw)
+        const transaction = await contractWeth9.withdraw.populateTransaction(movePointRight(amount, 18));
+        await sendTransactionByWallet({...fillTranRequest(transaction),}, 30, 0.1);
+    }
+}
+
+async function testHelpSendToken(symbol, amount) {
+    let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
+    if (symbol === 'eth') {
+        await helpSendToken(null, '0x6803c2566b114196e56949999b4bbbee413777f0', amount, tokenObj.decimals, 30, 1.8)
+    } else {
+        let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
+        await helpSendToken(contractERC20, '0x6803c2566b114196e56949999b4bbbee413777f0', amount, tokenObj.decimals, 30, 1.8)
+    }
+}
+
+async function testTransRoute() {
+    let initInputAmount = CurrencyAmount.fromRawAmount(tokens[autoTradeInSymbol], movePointRight(5000, tokens[autoTradeInSymbol].decimals))
+    let outInputAmount = CurrencyAmount.fromRawAmount(tokens[autoTradeInSymbol], movePointRight(5001, tokens[autoTradeInSymbol].decimals))
+    let quoteResult = await transRoute([6, 9, 0], initInputAmount, outInputAmount, 1, true)
+    console.log(`quoteResult=${quoteResult}`)
+    await transRoute([6, 9, 0], initInputAmount, outInputAmount, 1, false)
+}
+
+
+//await autoTrade()
+//createWallet('','')
+//await approval('weth', 'usdt', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
+//await uniswapBook()
+//await moreUniswapBook()
+//await oneInchAggregationBook()
+//await oneInchFusionBook()
+//await oneInchAggregationAddOrder().then()
+//await oneInchFusionAddOrder()
+//await wethWrap(true, 5.137037, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
+//await testSendToken().then()
+await testHelpSendToken('weth', 0.04)
+//await uniswapAddOrder()
+//await testTransRoute()
