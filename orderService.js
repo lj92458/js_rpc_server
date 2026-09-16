@@ -127,7 +127,7 @@ export async function addTwoOrderOneInch(coinPair1, orderType1, price1, volume1,
         ])
         console.log('addTwoOrderOneInch预计消耗gas量:' + transaction1.gas + ', 和' + transaction1.gas)
 
-        let transaction = await smartContractWallet.populateTransaction.aggregate3Value([
+        let transaction = await smartContractWallet.aggregate3Value.populateTransaction([
                 {target: transaction1.to, allowFailure: false, value: transaction1.value, callData: transaction1.data},
                 {target: transaction2.to, allowFailure: false, value: transaction2.value, callData: transaction2.data},
             ], {value: transaction1.value + transaction2.value,}

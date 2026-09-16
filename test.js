@@ -1,7 +1,7 @@
 //keystore相关知识：https://www.jianshu.com/p/bc9ea0dc74ed
 import SwapRouterAbi
     from '@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json' assert {type: 'json'}
-import ethers, {Contract, utils} from 'ethers'
+import {Contract, formatUnits, Interface, Wallet,} from 'ethers'
 import {helpSendToken, queryTokenBalance, receiveToken, sendToken} from './accountService.js'
 import {bookProduct, bookProductOneInch, getGasPriceGweiAndEthPrice} from './productService.js'
 import {addOrder, addOrderOneInch, autoTrade} from './orderService.js'
@@ -18,7 +18,7 @@ import {CurrencyAmount} from "@uniswap/sdk-core";
 //const util = require("./util")
 //const https = require('https')
 function createWallet(word, p) {
-    const myWallet = ethers.Wallet.fromMnemonic(word)
+    const myWallet = Wallet.fromMnemonic(word)
     console.log(myWallet.address)
     myWallet.encrypt(p).then(r => console.log(r))
 }
@@ -40,11 +40,11 @@ function createWallet(word, p) {
 //授权
 async function approval(symbol1, symbol2, spenderAddress = SWAP_ROUTER_ADDRESS) {
     if (symbol1) {
-        let result = await getTokenTransferApproval(tokens[symbol1], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
+        let result = await getTokenTransferApproval(tokens[symbol1], 10000000, 120, Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
         console.log(result)
     }
     if (symbol2) {
-        let result = await getTokenTransferApproval(tokens[symbol2], 10000000, 120, Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
+        let result = await getTokenTransferApproval(tokens[symbol2], 10000000, 120, Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2), spenderAddress)
         console.log(result)
     }
 }
@@ -56,7 +56,7 @@ async function testSendToken() {
         0.001,
         true,
         20,
-        utils.formatUnits(await provider.getGasPrice(), "gwei")
+        formatUnits(await provider.getGasPrice(), "gwei")
     )
     console.log('sendToken: ' + JSON.stringify(result))
 }
@@ -68,7 +68,7 @@ async function testReceiveToken() {
         0.001,
         true,
         20,
-        utils.formatUnits(await provider.getGasPrice(), "gwei")
+        formatUnits(await provider.getGasPrice(), "gwei")
     )
 }
 
@@ -117,7 +117,7 @@ async function uniswapAddOrder() {
             book.bids[0][0],
             1,
             120,
-            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.001,
             500);
         await addOrder('weth-usdc',
@@ -125,7 +125,7 @@ async function uniswapAddOrder() {
             book.asks[0][0],
             0.01,
             120,
-            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.001,
             500);
     })
@@ -134,7 +134,7 @@ async function uniswapAddOrder() {
 
 
 function test3() {
-    const iface = new ethers.utils.Interface(SwapRouterAbi.abi);
+    const iface = new Interface(SwapRouterAbi.abi);
     let decodedData = iface.parseTransaction({
         data: '0x414bf389000000000000000000000000471ece3750da237f93b8e339c536989b8978a438000000000000000000000000765de816845861e75a25fca122bb6898b8b1282a0000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000b0d1435590b4f14a5f4414f93489945546162ffc00000000000000000000000000000000000000000000000000000000643f82f00000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000008517fab5d6dcf680000000000000000000000000000000000000000000000000000000000000000',
         value: '0x00'
@@ -149,14 +149,14 @@ async function oneInchAggregationAddOrder() {
             book.bids[0][0],
             0.01,
             120,
-            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.002);
         await addOrderOneInch('weth-usdc',
             'buy',
             book.asks[0][0],
             0.01,
             120,
-            Number(utils.formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
+            Number(formatUnits(await provider.getGasPrice(), "gwei")).toFixed(2),
             0.002);
     })
 }
@@ -196,18 +196,22 @@ async function oneInchFusionAddOrder() {
 async function wethWrap(isWrap, amount, tokenAddress) {
     let contractWeth9 = new Contract(tokenAddress, weth9ABI.abi, provider)
     if (isWrap) {//eth转weth(调用deposit)
-        const transaction = await contractWeth9.populateTransaction.deposit()
+        const transaction = await contractWeth9.deposit.populateTransaction()
         await sendTransactionByWallet({...fillTranRequest(transaction, null, null, movePointRight(amount, 18)),}, 30, 0.1)
     } else {//weth转成eth(调用withdraw)
-        const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(amount, 18));
+        const transaction = await contractWeth9.withdraw.populateTransaction(movePointRight(amount, 18));
         await sendTransactionByWallet({...fillTranRequest(transaction),}, 30, 0.1);
     }
 }
 
 async function testHelpSendToken(symbol, amount) {
     let tokenObj = tokens[symbol]?.wrapped || tokens['w' + symbol]?.wrapped
-    let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
-    await helpSendToken(null, '0x59f662CF5ec57E1503c2eDEa084797428BBe00FF', amount, 18, 30, 0.2)
+    if (symbol === 'eth') {
+        await helpSendToken(null, '0x6803c2566b114196e56949999b4bbbee413777f0', amount, tokenObj.decimals, 30, 1.8)
+    } else {
+        let contractERC20 = new Contract(tokenObj.address, IERC20.abi, provider)
+        await helpSendToken(contractERC20, '0x6803c2566b114196e56949999b4bbbee413777f0', amount, tokenObj.decimals, 30, 1.8)
+    }
 }
 
 async function testTransRoute() {
@@ -219,17 +223,17 @@ async function testTransRoute() {
 }
 
 
-await autoTrade()
+//await autoTrade()
 //createWallet('','')
 //await approval('weth', 'usdt', SWAP_ROUTER_ADDRESS).then() // SWAP_ROUTER_ADDRESS 或者 1inch的AggregationRouterV5
-await uniswapBook()
+//await uniswapBook()
 //await moreUniswapBook()
-//await testSendToken().then()
 //await oneInchAggregationBook()
 //await oneInchFusionBook()
 //await oneInchAggregationAddOrder().then()
 //await oneInchFusionAddOrder()
-await wethWrap(true, 5.137037, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
-//await testHelpSendToken('eth', 1)
+//await wethWrap(true, 5.137037, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
+//await testSendToken().then()
+await testHelpSendToken('weth', 0.04)
 //await uniswapAddOrder()
 //await testTransRoute()

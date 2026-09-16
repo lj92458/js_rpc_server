@@ -2,7 +2,7 @@ import {createOrderBook, getPool, poolMap} from './lib/pool.js'
 import assert from 'assert'
 import {Big, movePointRight, parseBookArgs} from './util.js'
 
-import {BigNumber, Contract, utils} from 'ethers'
+import {Contract, formatUnits,} from 'ethers'
 import {hasUniswap, myAxios, nativeToken, oneInchConf, provider, tokens} from './config.js'
 import oneInchOracleAbi from './lib/oneInchOracleAbi.json' assert {type: 'json'}
 import {Pool} from "@uniswap/v3-sdk";
@@ -42,7 +42,7 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
         if (moneySymbol === nativeToken || moneySymbol === 'w' + nativeToken) {
             console.log(new Date().toLocaleString() + `: call getGasPrice 2 times`)
             gasPrice = await provider.getGasPrice()
-            let gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+            let gasPriceGwei = formatUnits(gasPrice, "gwei")
             return [Number(gasPriceGwei).toFixed(2), 1]
 
         } else {
@@ -54,13 +54,13 @@ export async function getGasPriceGweiAndEthPrice(moneySymbol, poolFee) {
                 console.log(new Date().toLocaleString() + `: call getPool&getGasPrice 2 times`)
                 const [pool, gasPrice] = await Promise.all([getPool(goodsToken, moneyToken, poolFee), provider.getGasPrice()])
                 ethPrice = pool.priceOf(goodsToken).toFixed(9)
-                gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+                gasPriceGwei = formatUnits(gasPrice, "gwei")
             } else {//没有uniswap，那么就从1inch的spot-price-aggregator预言机获取eth的价格了
                 console.log(new Date().toLocaleString() + `: call 1inch oracle & getGasPrice 2 times`)
                 let oneInchOracle = new Contract(oneInchConf.oracle, oneInchOracleAbi, provider)
                 const [bigNumberPrice, gasPrice] = await Promise.all([oneInchOracle.getRate(goodsToken.address, moneyToken.address, false), provider.getGasPrice()])
-                ethPrice = BigNumber.from(bigNumberPrice).div(10 ** moneyToken.decimals).toString()
-                gasPriceGwei = utils.formatUnits(gasPrice, "gwei")
+                ethPrice = BigInt(bigNumberPrice).div(10 ** moneyToken.decimals).toString()
+                gasPriceGwei = formatUnits(gasPrice, "gwei")
             }
             return [Number(gasPriceGwei).toFixed(2), ethPrice]
 

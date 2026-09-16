@@ -1,5 +1,5 @@
 import {IERC20, smartContractWalletAddress, weth10ABI, weth9ABI} from './lib/constant.js'
-import {Contract, utils,} from 'ethers'
+import {Contract, formatEther, getAddress,} from 'ethers'
 import {
     CallContract,
     callProvider,
@@ -25,7 +25,7 @@ import {fillTranRequest, sendTransactionByWallet} from "./lib/providers.js";
  */
 export async function queryTokenBalance(ethAddress, symbolArr) {
     //console.log('queryTokenBalance:' + ethAddress)
-    ethAddress = utils.getAddress(ethAddress)//把格式变成包含大小写字母的，免得提示unchecksum address
+    ethAddress = getAddress(ethAddress)//把格式变成包含大小写字母的，免得提示unchecksum address
     let promiseArr = []
     let tokenObjArr = []
     for (let symbol of symbolArr) {
@@ -83,10 +83,10 @@ export async function sendToken(symbol, address, amount, needWrap, maxWaitSecond
     if (symbol === nativeToken) {
         if (needWrap) {//把weth转成eth并发送(调用weth10的withdrawTo可完成这两步，但是weth9没有withdrawTo，只好调用withdraw然后发送)
             if (supportWeth10) {//withdrawTo 【用不上，因为币安不支持合约调用形式的转账】
-                const transaction = await contractWeth10.populateTransaction.withdrawTo(address, amountInBaseUnit)
+                const transaction = await contractWeth10.withdrawTo.populateTransaction(address, amountInBaseUnit)
                 return await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei)
             } else {//withdraw且sendETH
-                const transaction = await contractWeth9.populateTransaction.withdraw(amountInBaseUnit)
+                const transaction = await contractWeth9.withdraw.populateTransaction(amountInBaseUnit)
                 firstStepResult = await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei)
                 if (firstStepResult?.hash) {//sendETH
                     return await helpSendToken(null, address, amount, tokenObj.decimals, maxWaitSeconds, gasPriceGwei)
@@ -98,14 +98,14 @@ export async function sendToken(symbol, address, amount, needWrap, maxWaitSecond
     } else if (symbol === 'w' + nativeToken) {//weth
         if (needWrap) {//把eth转成weth并发送(调用weth10的depositTo可完成这两步,但是weth9没有depositTo，只好调用deposit和transfer)
             if (supportWeth10) {//depositTo 【用不上，因为币安不支持合约调用形式的转账】
-                const transaction = await contractWeth10.populateTransaction.depositTo(address)
+                const transaction = await contractWeth10.depositTo.populateTransaction(address)
                 let result = await sendTransactionByWallet(
                     {...fillTranRequest(transaction, null, null, amountInBaseUnit),}, maxWaitSeconds, gasPriceGwei)
                 console.log(new Date().toLocaleString() + ' depositTo给1个参数，正常')
                 return result
 
             } else {//deposit且transfer
-                const transaction = await contractWeth9.populateTransaction.deposit();
+                const transaction = await contractWeth9.deposit.populateTransaction();
                 firstStepResult = await sendTransactionByWallet(
                     {...fillTranRequest(transaction, null, null, amountInBaseUnit),}, maxWaitSeconds, gasPriceGwei);
                 console.log(new Date().toLocaleString() + ' deposit给0个参数，正常')
@@ -126,7 +126,7 @@ export async function sendToken(symbol, address, amount, needWrap, maxWaitSecond
 export async function helpSendToken(contractERC20, toAddress, amount, decimals, maxWaitSeconds, gasPriceGwei) {
     try {
         if (contractERC20) {
-            const transaction = await contractERC20.populateTransaction.transfer(toAddress, movePointRight(amount, decimals))
+            const transaction = await contractERC20.transfer.populateTransaction(toAddress, movePointRight(amount, decimals))
             return await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei)
         } else {
             return await sendTransactionByWallet({...fillTranRequest(null, null, toAddress, movePointRight(amount, decimals)),}, maxWaitSeconds, gasPriceGwei)
@@ -162,10 +162,10 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
         if (needWrap && transactionReceipt?.transactionHash) {//如果需要转换
             let contractWeth9 = new Contract(tokenObj.address, weth9ABI.abi, provider)
             if (symbol === nativeToken) {//eth转成weth(调用deposit)
-                const transaction = await contractWeth9.populateTransaction.deposit()
+                const transaction = await contractWeth9.deposit.populateTransaction()
                 await sendTransactionByWallet({...fillTranRequest(transaction, null, null, movePointRight(amount, tokenObj.decimals)),}, maxWaitSeconds, gasPriceGwei)
             } else if (symbol === 'w' + nativeToken) {//weth转成eth(调用withdraw)
-                const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(amount, tokenObj.decimals));
+                const transaction = await contractWeth9.withdraw.populateTransaction(movePointRight(amount, tokenObj.decimals));
                 await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei);
             }
         }
@@ -181,18 +181,18 @@ export async function receiveToken(symbol, txId, amount, needWrap, maxWaitSecond
  * @return {Promise<void>}
  */
 async function checkNativeToken(minAmount, maxAmount, maxWaitSeconds, gasPriceGwei) {
-    let ethBalance = utils.formatEther(await provider.getBalance(wallet.address))//gas fee总是从eoa账户扣的，不可能从智能合约钱包中扣
+    let ethBalance = formatEther(await provider.getBalance(wallet.address))//gas fee总是从eoa账户扣的，不可能从智能合约钱包中扣
     console.log('当前eth余额' + ethBalance)
     if (ethBalance < minAmount) {
         console.log('eth数量小于' + minAmount + ', 开始从weth转入' + maxAmount)
         let weth = tokens['w' + nativeToken]
         let contractWeth9 = new Contract(weth.address, weth9ABI.abi, provider)
-        const transaction = await contractWeth9.populateTransaction.withdraw(movePointRight(maxAmount, weth.decimals));
+        const transaction = await contractWeth9.withdraw.populateTransaction(movePointRight(maxAmount, weth.decimals));
         await sendTransactionByWallet({...fillTranRequest(transaction),}, maxWaitSeconds, gasPriceGwei);
         console.log('成功withdraw ' + maxAmount + ' weth')
         //如果用了智能合约钱包，那么要把gas fee转入eoa钱包,因为gas fee总是从eoa账户扣的，不可能从智能合约钱包中扣
         if (useSmartContractWallet) {
-            let tran = smartContractWallet.populateTransaction.ethTransfer(wallet.address, movePointRight(maxAmount, weth.decimals))
+            let tran = smartContractWallet.ethTransfer.populateTransaction(wallet.address, movePointRight(maxAmount, weth.decimals))
             await sendTransactionByWallet({...fillTranRequest(tran),}, maxWaitSeconds, gasPriceGwei);
 
         }

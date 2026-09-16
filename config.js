@@ -5,19 +5,18 @@
  * @uniswap/sdk-core 对其它sdk数据结构的抽象，用于多个sdk之间共享数据结构、互相传递数据
  */
 import {
+    aggregate3ValueAbi,
     Environment,
-    tokens as allTokens,
     oneInchConf as allOneInchConf,
-    smartContractWalletAddress, aggregate3ValueAbi
+    smartContractWalletAddress,
+    tokens as allTokens
 } from './lib/constant.js'
-import {Contract, getDefaultProvider, providers, utils, Wallet} from 'ethers'
+import {BrowserProvider, Contract, EtherscanProvider, formatEther, formatUnits, JsonRpcProvider, Wallet} from 'ethers'
 import {prop} from './properties.js'
-import {ScanProvider} from './lib/ScanProvider.js'
 import axios from "axios";
 import * as https from "https";
 import * as http from "http";
 import {Contract as CallContract, Provider as CallProvider} from 'ethers-multicall'
-import jsonWallet from './lib/jsonWallet.json' assert {type: 'json'}
 import {jsonA} from './lib/jsonA.js'
 import {jsonB} from './lib/jsonB.js'
 
@@ -44,8 +43,7 @@ export const chainId = Number(process.argv.slice(2)[0]) || 1 //网络编号，�
 export const env = process.argv.slice(2)[1] || 'MAINNET' //当前环境LOCAL, MAINNET, WALLET_EXTENSION
 export let tokens = allTokens[chainId] || null
 export const oneInchConf = allOneInchConf[chainId]
-//export const etherscanAPIKey = '32YQ9W1FDCU1XGCUNQQF9Z5GG6R5B2BYNI' //https://api.arbiscan.io/api
-export const etherscanAPIKey = 'JIJVADIVFY92Z3FBP13ZPNMWFYISSMA3DD' //arbscan第二个apiKey
+export const etherscanAPIKey = 'ENSBQGPFJPV26W1AS9BF9DUTX355ESSCX8'
 export const oneInchUrl = 'https://api.1inch.io/v5.0/' + chainId // 1inch端点
 export const myAxios = axios.create({
     baseURL: oneInchUrl,
@@ -58,17 +56,17 @@ export let callProvider
 (function createProvider() {
     //如果是本机客户端
     if (env === Environment.LOCAL) {
-        provider = new providers.JsonRpcProvider(rpc.local)
+        provider = new JsonRpcProvider(rpc.local)
     } else if (env === Environment.MAINNET) {//如果是远程公共服务
         //ankr，pocket，infura都支持arbitrum
-        provider = new ScanProvider(chainId, etherscanAPIKey) //arbitrumscan有时候卡。但是免费计划，能允许每秒五次调用呢。
+        provider = new EtherscanProvider(chainId, etherscanAPIKey) //arbitrumscan有时候卡。但是免费计划，能允许每秒五次调用呢。
         //50美元能确保每天20万次调用(每小时八千次)。免费的每天能调用10万次(4166次每小时)。我的程序如果每3秒执行一次，每小时就是1200次。
         //provider = new JsonRpcProvider('https://arbitrum-mainnet.infura.io/v3/da153625e5c247319b62d4b5a76fc639', chainId)
         //我的程序如果每3秒执行一次，每小时就是1200次,每个月86.4万次。根据https://www.ankr.com/docs/rpc-service/pricing 的价格列表，每次0.00002$,每月就是17.28$ 。如果1秒一次，就是51.84$。只能用美元支付。
-        //provider = new providers.JsonRpcProvider('https://rpc.ankr.com/arbitrum/a769c35667e8f23271dd8ae9d396d9949d2b4c59b518932331b6aa947195a174', chainId)
+        //provider = new JsonRpcProvider('https://rpc.ankr.com/arbitrum/a769c35667e8f23271dd8ae9d396d9949d2b4c59b518932331b6aa947195a174', chainId)
     } else if (env === Environment.WALLET_EXTENSION) {// 浏览器扩展
         try {
-            provider = new providers.Web3Provider(window?.ethereum, 'any')
+            provider = new BrowserProvider(window?.ethereum, 'any')
         } catch (e) {
             console.log('No Wallet Extension Found')
             return null
@@ -76,7 +74,6 @@ export let callProvider
     } else {
         throw new Error(`未知的env:${env}`)
     }
-    provider.pollingInterval = 1500 //设置监听器的轮询时间间隔
     callProvider = new CallProvider(provider, chainId);
 })()
 
@@ -101,11 +98,11 @@ export async function initWallet(provider) {
             //wallet = Wallet.fromEncryptedJsonSync(JSON.stringify(jsonWallet), args[0]).connect(provider)
             wallet = Wallet.fromEncryptedJsonSync(jsonA + jsonB, process.env.a + '#2017' + process.env.b).connect(provider)
             console.log('wallet load succeed.Address:' + wallet.address + ' ,time usded:' + (Date.now() - beginTime))
-            wallet.getGasPrice().then(r => console.log('gas price:' + utils.formatUnits(r, "gwei")))
-            wallet.getBalance().then(num => console.log(" EOA wallet balance:" + utils.formatEther(num)))
+            provider.getFeeData().then(feeData => console.log('gas price:' + formatUnits(feeData.gasPrice, "gwei")))
+            provider.getBalance(wallet.address).then(num => console.log(" EOA wallet balance:" + formatEther(num)))
             //智能合约钱包
             smartContractWallet = new Contract(smartContractWalletAddress, aggregate3ValueAbi, provider)
-            console.log(" smart wallet balance:" + utils.formatEther(await provider.getBalance(smartContractWalletAddress)))
+            console.log(" smart wallet balance:" + formatEther(await provider.getBalance(smartContractWalletAddress)))
             return wallet
         }
     }
